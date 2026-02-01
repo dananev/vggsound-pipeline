@@ -25,6 +25,18 @@ This pipeline processes VGGSound videos through multiple stages:
 
 ## Installation
 
+### System Requirements
+
+- Python 3.10+
+- PyTorch 2.3+ (required for bitsandbytes)
+- ffmpeg (for audio extraction)
+- Supported platforms:
+  - **Linux** (x86_64, aarch64) - CPU or CUDA GPU
+  - **macOS** (Apple Silicon only) - CPU-based inference
+  - **Windows** (x86_64) - CPU or CUDA GPU
+
+> **Note**: Intel Macs (x86_64) are not supported as PyTorch dropped support for them.
+
 ### Using uv (recommended)
 
 ```bash
@@ -34,26 +46,34 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Clone and install
 git clone <repo_url>
 cd vggsound-pipeline
-uv sync
 
-# With GPU support
-uv sync --extra gpu
+# Choose your backend:
+
+# Apple Silicon Mac or Linux CPU-only
+uv sync --extra cpu
+
+# Linux with CUDA 12.1 (e.g., Colab T4, older GPUs)
+uv sync --extra cu121
+
+# Linux with CUDA 12.4 (newer GPUs)
+uv sync --extra cu124
+
+# Add dev tools (pytest, ruff)
+uv sync --extra cpu --extra dev
 ```
 
 ### Using pip
 
 ```bash
-pip install -e .
+# CPU-only (macOS or Linux)
+pip install -e ".[cpu]"
 
-# With GPU support
-pip install -e ".[gpu]"
+# With CUDA 12.1
+pip install -e ".[cu121]"
+
+# With CUDA 12.4
+pip install -e ".[cu124]"
 ```
-
-### System Requirements
-
-- Python 3.10+
-- ffmpeg (for audio extraction)
-- CUDA GPU recommended (16GB+ VRAM for captioning)
 
 ## Quick Start
 
@@ -159,15 +179,21 @@ export VGGSOUND_BATCH_SIZE=8
 
 ## Google Colab Setup
 
-```python
-# Install
-!pip install torch torchaudio transformers accelerate bitsandbytes \
-    typer pydantic orjson ffmpeg-python
+Colab provides T4 GPUs with CUDA, so use the `cu121` extra:
 
-# Clone repo
+```python
+# Install uv (faster than pip)
+!curl -LsSf https://astral.sh/uv/install.sh | sh
+!source ~/.local/bin/env
+
+# Clone and install with CUDA support
 !git clone <repo_url>
 %cd vggsound-pipeline
-!pip install -e .
+!uv sync --extra cu121
+
+# Or use pip if you prefer
+!pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+!pip install -e ".[cu121]"
 
 # Upload data and run
 !vggsound run vggsound_00.tar.gz vggsound.csv --sample-limit 200
@@ -177,14 +203,14 @@ export VGGSOUND_BATCH_SIZE=8
 
 ```bash
 # Install dev dependencies
-uv sync --extra dev
+uv sync --extra cpu --extra dev
 
 # Run tests
-pytest
+uv run pytest
 
 # Lint and format
-ruff check .
-ruff format .
+uv run ruff check .
+uv run ruff format .
 ```
 
 ## Architecture Notes
@@ -207,9 +233,18 @@ ruff format .
 ### Memory Management
 
 - Models loaded sequentially (not all at once)
-- 8-bit quantization for large models
+- 8-bit quantization on CUDA GPUs (fits 7B models in 16GB VRAM)
+- fp16 on MPS and CPU (uses more memory but no bitsandbytes needed)
 - CUDA cache cleared periodically
 - Checkpointing for long runs
+
+### Platform Notes
+
+| Platform | Precision | Notes |
+|----------|-----------|-------|
+| CUDA (Linux/Windows) | int8 (bitsandbytes) | Best performance, lowest memory |
+| MPS (Apple Silicon) | fp16 | GPU-accelerated, good performance |
+| CPU | fp16 | Slowest, fallback option |
 
 ## License
 

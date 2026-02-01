@@ -2,10 +2,8 @@
 name = "vggsound-pipeline"
 version = "0.1.0"
 description = "Filter VGGSound for sound effects with ML-based classification"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10"
 dependencies = [
-    "torch>=2.0,<2.3",
-    "torchaudio>=2.0,<2.3",
     "transformers>=4.40",
     "typer>=0.9",
     "pydantic>=2.0",
@@ -17,9 +15,23 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["ruff", "pytest", "pytest-cov"]
-gpu = [
+cpu = [
+    "torch>=2.3",
+    "torchaudio>=2.3",
     "accelerate>=0.27",
-    "bitsandbytes>=0.42",
+    # No bitsandbytes - on macOS it runs on CPU (not MPS), so fp16 on MPS is faster
+]
+cu121 = [
+    "torch>=2.3",
+    "torchaudio>=2.3",
+    "accelerate>=0.27",
+    "bitsandbytes>=0.44",
+]
+cu124 = [
+    "torch>=2.3",
+    "torchaudio>=2.3",
+    "accelerate>=0.27",
+    "bitsandbytes>=0.44",
 ]
 
 [project.scripts]
@@ -31,6 +43,42 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/vggsound_pipeline"]
+
+[tool.uv]
+environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux'",
+]
+conflicts = [
+    [{ extra = "cpu" }, { extra = "cu121" }, { extra = "cu124" }],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'", extra = "cpu" },
+    { index = "pytorch-cu121", marker = "sys_platform == 'linux'", extra = "cu121" },
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cu124" },
+]
+torchaudio = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'", extra = "cpu" },
+    { index = "pytorch-cu121", marker = "sys_platform == 'linux'", extra = "cu121" },
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cu124" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
 
 [tool.ruff]
 line-length = 100

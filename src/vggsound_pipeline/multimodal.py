@@ -54,13 +54,17 @@ Be precise about what you hear. If uncertain, say so."""
     def load_model(self):
         """Load Qwen2.5-Omni model and processor.
 
-        Note: This model requires significant VRAM (~14GB for 8-bit).
+        Note: This model is large (~14GB). On CUDA uses 8-bit quantization,
+        on MPS/CPU uses fp16.
         """
         if self.model is not None:
             return
 
         print(f"Loading Qwen2.5-Omni on {self.device}...")
-        print("This model requires significant VRAM. Use on GPU with 16GB+ VRAM.")
+        if self.use_8bit:
+            print("Using 8-bit quantization (~7GB VRAM)")
+        else:
+            print("Using fp16 (~14GB memory)")
 
         try:
             from transformers import AutoProcessor, Qwen2_5OmniForConditionalGeneration
@@ -81,7 +85,7 @@ Be precise about what you hear. If uncertain, say so."""
             else:
                 self.model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
                     self.MODEL_ID,
-                    torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
+                    torch_dtype=torch.float16,
                     device_map="auto",
                 )
         except ImportError as e:

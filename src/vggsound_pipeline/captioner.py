@@ -3,8 +3,10 @@
 Qwen2-Audio-7B-Instruct is a multimodal model that can understand
 and describe audio content with rich, natural language descriptions.
 
-For memory efficiency on T4 GPUs (16GB VRAM), we use 8-bit quantization
-via bitsandbytes.
+Memory optimization:
+- CUDA: 8-bit quantization via bitsandbytes (fits in 16GB VRAM)
+- MPS (Apple Silicon): fp16 on GPU
+- CPU: fp32 fallback
 """
 
 from pathlib import Path
@@ -89,10 +91,9 @@ class AudioCaptioner:
                     device_map="auto",
                 )
         else:
-            dtype = torch.float16 if self.device == "cuda" else torch.float32
             self.model = Qwen2AudioForConditionalGeneration.from_pretrained(
                 self.MODEL_ID,
-                torch_dtype=dtype,
+                torch_dtype=torch.float16,
             ).to(self.device)
 
     def caption(self, audio_path: Path, prompt: str | None = None) -> str:
