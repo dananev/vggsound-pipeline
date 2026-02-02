@@ -10,15 +10,15 @@ This pipeline processes VGGSound videos through multiple stages:
 2. **Label Pre-filtering**: Fast rejection of obvious music/speech labels
 3. **Speech Detection**: Silero VAD for voice activity detection
 4. **Music Detection**: CLAP zero-shot classification
-5. **Audio Captioning**: CoNeTTE efficient descriptions (~10 samples/s)
+5. **Audio Captioning**: Microsoft CLAP clapcap (batch processing)
 6. **Multimodal Verification** (optional): Qwen2.5-Omni for uncertain cases
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  1. EXTRACTION        2. FILTERING           3. CAPTIONING    4. OUTPUT     │
 │  ┌──────────────┐    ┌────────────────┐     ┌─────────────┐  ┌───────────┐ │
-│  │ MP4 → WAV    │───▶│ Speech: Silero │────▶│  CoNeTTE    │─▶│  JSONL    │ │
-│  │ (ffmpeg)     │    │ Music: CLAP    │     │  (fast)     │  │ + scores  │ │
+│  │ MP4 → WAV    │───▶│ Speech: Silero │────▶│ CLAP clapcap│─▶│  JSONL    │ │
+│  │ (ffmpeg)     │    │ Music: CLAP    │     │ (captioning)│  │ + scores  │ │
 │  └──────────────┘    └────────────────┘     └─────────────┘  └───────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -163,12 +163,12 @@ Fields:
 | Component | Model | Purpose |
 |-----------|-------|---------|
 | Speech Detection | Silero VAD | Fast CPU-based voice detection |
-| Music Detection | CLAP (laion/larger_clap_music_and_speech) | Zero-shot audio classification |
-| Captioning | CoNeTTE (~100M params) | Fast, production-ready captioning (~10/s) |
-| Multimodal | Qwen2.5-Omni-7B | Video+audio verification |
+| Music Detection | LAION CLAP | Zero-shot audio classification |
+| Captioning | Microsoft CLAP clapcap | Audio captioning with batch support |
+| Multimodal | Qwen2.5-Omni-7B | Video+audio verification (optional) |
 
-> **Note**: CoNeTTE was chosen over Qwen2-Audio for production scalability (10x throughput, 1/40th memory).
-> See [IMPLEMENTATION_DETAILS.md](IMPLEMENTATION_DETAILS.md) for the full tradeoff analysis.
+> **Note**: Microsoft CLAP clapcap was chosen for captioning - it's faster than LLM-based approaches
+> and compatible with modern transformers. See [IMPLEMENTATION_DETAILS.md](IMPLEMENTATION_DETAILS.md).
 
 ## Configuration
 
@@ -221,18 +221,18 @@ uv run ruff format .
 ### Why These Models?
 
 1. **Silero VAD**: Extremely fast (<1ms/chunk), works great on CPU, no GPU needed
-2. **CLAP**: Zero-shot classification means no training needed; specifically trained on music+speech
-3. **CoNeTTE**: Purpose-built for audio captioning, 10x faster than LLM-based approaches
+2. **LAION CLAP**: Zero-shot classification, no training needed, specifically trained on music+speech
+3. **Microsoft CLAP clapcap**: Built-in captioning, compatible with transformers>=4.34, batch processing
 4. **Qwen2.5-Omni**: When audio-only is uncertain, video context helps disambiguate
 
-### Why CoNeTTE over Qwen2-Audio?
+### Why CLAP clapcap over LLM-based captioning?
 
-For production-scale data pipelines processing TBs/day:
-- **Throughput**: ~10 samples/s vs ~1 sample/s (10x faster)
-- **Memory**: ~2GB VRAM vs 15-80GB (runs on any GPU)
-- **Quality**: SPIDEr 44% vs ~55% (acceptable tradeoff for pretraining data)
+For production-scale data pipelines:
+- **Compatibility**: Works with modern transformers (>=4.34), no dependency conflicts
+- **Efficiency**: Batch processing support, reasonable memory usage
+- **Quality**: Good descriptions without requiring 7B+ parameter LLMs
 
-For eval sets requiring highest quality, use Qwen3-Omni-30B-A3B-Captioner via vLLM on A100s.
+For eval sets requiring highest quality, consider Qwen3-Omni-30B-A3B-Captioner via vLLM on A100s.
 
 ### Confidence Levels
 
@@ -245,10 +245,12 @@ For eval sets requiring highest quality, use Qwen3-Omni-30B-A3B-Captioner via vL
 ### Memory Management
 
 - Models loaded sequentially (not all at once)
-- CoNeTTE is lightweight (~2GB VRAM), runs on any GPU including T4
-- CLAP model (~1.5GB) unloaded before captioning
+- CLAP models are lightweight, run on any GPU including T4
 - CUDA cache cleared between stages
 - Checkpointing for long runs and resume support
+
+> **Note**: The Installation section lists outdated dependencies. Run `uv sync` or check
+> `pyproject.toml` for current requirements.
 
 ### Platform Notes
 

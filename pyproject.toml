@@ -11,7 +11,7 @@ dependencies = [
     "orjson>=3.9",
     "tqdm>=4.65",
     "ffmpeg-python>=0.2",
-    "conette>=0.3",
+    "msclap>=1.0",
 ]
 
 [project.optional-dependencies]

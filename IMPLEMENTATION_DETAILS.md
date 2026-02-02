@@ -27,8 +27,8 @@ This pipeline filters VGGSound for sound effects (no music/speech) and generates
 │            │ (~30% of original)                                                │
 │            ▼                                                                    │
 │   ┌─────────────────┐                                                          │
-│   │  TIER 3: CAPTION│  Lightweight model, ~10 samples/s/GPU                   │
-│   │  CoNeTTE        │  All accepted samples                                    │
+│   │  TIER 3: CAPTION│  CLAP clapcap, batch processing                         │
+│   │  MS CLAP        │  All accepted samples                                    │
 │   └────────┬────────┘                                                          │
 │            │                                                                    │
 │            ▼                                                                    │
@@ -91,10 +91,10 @@ This pipeline filters VGGSound for sound effects (no music/speech) and generates
 |--------|---------|
 | **Purpose** | Generate text descriptions for filtered audio |
 | **SOTA Approach** | Qwen3-Omni-30B-A3B-Captioner (Sep 2025) |
-| **Our Approach** | CoNeTTE (~100M params) |
-| **Why Practical** | 10x faster, 1/40th memory, purpose-built for captioning |
-| **Scalability** | ~10 samples/s/GPU vs ~1 sample/s for LLMs |
-| **Quality** | SPIDEr 44% vs Qwen2-Audio ~55% (acceptable for pretraining data) |
+| **Our Approach** | Microsoft CLAP clapcap |
+| **Why Practical** | Compatible with transformers>=4.34, batch processing, no LLM overhead |
+| **Scalability** | Batch inference, fits on T4 GPU |
+| **Quality** | Good descriptions for pretraining data, SOTA for eval sets |
 
 ---
 
@@ -110,11 +110,10 @@ TBs/day processing:
 
 Current pipeline throughput (single GPU):
 - Tier 1 (CPU): 1000+ samples/s ✓
-- Tier 2 (CLAP): ~20 samples/s ✓
-- Tier 3 (CoNeTTE): ~10 samples/s ✓
+- Tier 2 (CLAP classification): ~20 samples/s ✓
+- Tier 3 (CLAP captioning): batch processing ✓
 
-Bottleneck: Captioning at ~10 samples/s
-Solution: 4 GPUs in parallel = 40 samples/s > 37 samples/s ✓
+Solution: Parallel GPU jobs via Slurm array
 ```
 
 ### Slurm Job Structure
@@ -144,11 +143,10 @@ python -m vggsound_pipeline.run \
 |-------|--------|------|-------|---------|----------|
 | Qwen3-Omni-Captioner | 30B (3B active) | 80GB+ | ~1/s | SOTA | Eval sets |
 | Qwen2-Audio-7B INT4 | 7B | ~5GB | ~1/s | High | Demo |
-| Qwen2.5-Omni-3B | 3B | ~8GB | ~2/s | Med-High | Balance |
-| **CoNeTTE** | 100M | ~2GB | **~10/s** | Medium | **Production** |
+| **MS CLAP clapcap** | - | ~2-3GB | batch | Good | **Production** |
 | video-SALMONN 2+ 3B | 3B | ~6GB | ~3/s | Med-High | Alternative |
 
-**Recommendation**: CoNeTTE for production (10x throughput), Qwen-family for eval sets.
+**Recommendation**: MS CLAP clapcap for production (compatible, efficient), Qwen-family for eval sets.
 
 ---
 
@@ -157,14 +155,14 @@ python -m vggsound_pipeline.run \
 ```
 Quality ────────────────────────────────────────────────────► Throughput
    │                                                              │
-   │  Qwen3-Omni    Qwen2-Audio   CoNeTTE    Templates   Labels  │
-   │  (SOTA)        (High)        (Medium)   (Low)       (Min)   │
-   │  ~1/s          ~1/s          ~10/s      ~20/s       Instant │
+   │  Qwen3-Omni    Qwen2-Audio   CLAP cap   Templates   Labels  │
+   │  (SOTA)        (High)        (Good)     (Low)       (Min)   │
+   │  ~1/s          ~1/s          batch      ~20/s       Instant │
    │                                                              │
    └──────────────────────────────────────────────────────────────┘
 
 Industry practice (LAION-Audio-630K, WavCaps, AudioCaps):
-- Bulk data: Template/keyword-based descriptions
+- Bulk data: CLAP-based or template descriptions
 - High-value: LLM-enhanced captions
 - Eval sets: Human annotation
 ```
@@ -183,11 +181,11 @@ Industry practice (LAION-Audio-630K, WavCaps, AudioCaps):
    - Generalizes to unseen categories
    - Single model for music + speech detection
 
-3. **Why CoNeTTE over Qwen2-Audio?**
-   - 10x throughput (10/s vs 1/s)
-   - 1/40th memory (2GB vs 80GB)
-   - Purpose-built for audio captioning task
-   - Qwen for eval sets, CoNeTTE for scale
+3. **Why MS CLAP clapcap over Qwen2-Audio?**
+   - Compatible with modern transformers (>=4.34)
+   - No dependency conflicts with other pipeline components
+   - Batch processing support
+   - Qwen for eval sets, CLAP for production scale
 
 4. **Why tiered architecture?**
    - Early rejection saves GPU hours

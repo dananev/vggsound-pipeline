@@ -1,15 +1,12 @@
-"""Audio captioning using CoNeTTE (lightweight, production-ready).
+"""Audio captioning using Microsoft CLAP (clapcap).
 
-CoNeTTE is a purpose-built audio captioning model that is:
-- Lightweight: ~100M parameters vs 7B+ for LLMs
-- Fast: ~10 samples/second vs ~1 sample/second for LLMs
-- Memory efficient: ~2GB VRAM vs 15-80GB for LLMs
+Microsoft CLAP includes a built-in audio captioning model that:
+- Uses the 2023 CLAP encoders for audio understanding
+- Generates descriptive captions without requiring an LLM
+- Is compatible with transformers>=4.34.0
+- Runs efficiently on GPU (~2-3GB VRAM)
 
-This makes it ideal for production-scale audio annotation pipelines
-where throughput matters more than SOTA quality.
-
-For evaluation sets requiring highest quality captions,
-consider Qwen3-Omni-30B-A3B-Captioner via vLLM on A100 GPUs.
+This is faster than LLM-based approaches while maintaining good quality.
 """
 
 from pathlib import Path
@@ -19,82 +16,68 @@ from tqdm import tqdm
 
 
 class AudioCaptioner:
-    """Generate text descriptions for audio using CoNeTTE.
+    """Generate text descriptions for audio using Microsoft CLAP clapcap.
 
-    CoNeTTE is a lightweight (~100M params) audio captioning model
-    trained on AudioCaps, Clotho, WavCaps, and MACS datasets.
-    Ideal for production-scale processing.
+    Microsoft's CLAP includes a captioning model that generates
+    descriptive text from audio without requiring a separate LLM.
 
     Attributes:
-        device: Device for inference (cuda, mps, cpu)
-        task: Caption style ("audiocaps" or "clotho")
-        model: Loaded CoNeTTE model instance
+        device: Device for inference (cuda, cpu)
+        model: Loaded CLAP model instance
     """
 
     def __init__(
         self,
         device: str = "auto",
-        task: str = "audiocaps",
         cache_dir: str | None = None,
         prompt: str | None = None,  # Ignored, kept for API compatibility
+        task: str | None = None,  # Ignored, kept for API compatibility
     ):
-        """Initialize CoNeTTE captioner.
+        """Initialize CLAP captioner.
 
         Args:
-            device: Device for inference ("auto", "cuda", "cpu", "mps")
-            task: Caption style - "audiocaps" (short, factual) or "clotho" (longer, descriptive)
-            cache_dir: Directory to cache model weights (unused, kept for API compatibility)
-            prompt: Ignored - CoNeTTE uses task-based prompting, not custom prompts
+            device: Device for inference ("auto", "cuda", "cpu")
+            cache_dir: Unused, kept for API compatibility
+            prompt: Unused, kept for API compatibility
+            task: Unused, kept for API compatibility
         """
         if device == "auto":
             if torch.cuda.is_available():
                 device = "cuda"
-            elif torch.backends.mps.is_available():
-                device = "mps"
             else:
                 device = "cpu"
         self.device = device
-        self.task = task
-        self.cache_dir = cache_dir
+        self.use_cuda = device == "cuda"
         self.model = None
 
     def load_model(self):
-        """Load CoNeTTE model and move to device."""
+        """Load Microsoft CLAP captioning model."""
         if self.model is not None:
             return
 
-        print(f"Loading CoNeTTE model on {self.device}...")
+        print(f"Loading Microsoft CLAP captioner (clapcap) on {self.device}...")
 
-        from conette import CoNeTTEConfig, CoNeTTEModel
+        from msclap import CLAP
 
-        config = CoNeTTEConfig.from_pretrained("Labbeti/conette")
-        self.model = CoNeTTEModel.from_pretrained("Labbeti/conette", config=config)
+        self.model = CLAP(version="clapcap", use_cuda=self.use_cuda)
 
-        # Move to device if CUDA (CoNeTTE handles device placement internally for most cases)
-        if self.device == "cuda":
-            self.model = self.model.to(self.device)
-
-        print(f"CoNeTTE loaded successfully (~2GB VRAM)")
+        print("CLAP captioner loaded successfully")
 
     def caption(self, audio_path: Path, prompt: str | None = None) -> str:
         """Generate a text description for an audio file.
 
         Args:
             audio_path: Path to audio file (WAV, MP3, etc.)
-            prompt: Ignored - CoNeTTE uses task-based prompting
+            prompt: Ignored - CLAP captioner doesn't use prompts
 
         Returns:
             Text description of the audio content
-
-        Note:
-            CoNeTTE expects audio sampled at 32kHz but will auto-resample.
-            Audio should be 1-30 seconds for best results.
         """
         self.load_model()
 
         try:
-            outputs = self.model(str(audio_path), task=self.task)
-            return outputs["cands"][0]
+            captions = self.model.generate_caption([str(audio_path)])
+            return captions[0] if captions else ""
         except Exception as e:
             print(f"Error captioning {audio_path}: {e}")
             raise
@@ -112,23 +95,35 @@ class AudioCaptioner:
 
         Returns:
             Dict mapping audio paths to captions
-
-        Note:
-            Processes files one at a time to ensure consistent results.
-            CoNeTTE is already fast (~10 samples/s), so batching
-            provides minimal additional benefit.
         """
         self.load_model()
         results = {}
 
-        iterator = tqdm(audio_paths, desc="Captioning") if show_progress else audio_paths
+        # Process in small batches for memory efficiency
+        batch_size = 8
+        paths_list = list(audio_paths)
 
-        for audio_path in iterator:
+        iterator = range(0, len(paths_list), batch_size)
+        if show_progress:
+            iterator = tqdm(iterator, desc="Captioning", total=len(paths_list) // batch_size + 1)
+
+        for i in iterator:
+            batch = paths_list[i : i + batch_size]
+            batch_strs = [str(p) for p in batch]
+
             try:
-                results[audio_path] = self.caption(audio_path)
+                captions = self.model.generate_caption(batch_strs)
+                for path, caption in zip(batch, captions):
+                    results[path] = caption
             except Exception as e:
-                print(f"Error captioning {audio_path}: {e}")
-                results[audio_path] = f"Error: {str(e)}"
+                print(f"Error captioning batch: {e}")
+                # Fallback to individual processing
+                for path in batch:
+                    try:
+                        results[path] = self.caption(path)
+                    except Exception as e2:
+                        print(f"Error captioning {path}: {e2}")
+                        results[path] = f"Error: {str(e2)}"
 
         return results
 
@@ -143,7 +138,7 @@ def caption_audio(
     Args:
         audio_path: Path to audio file
         captioner: Optional pre-initialized captioner
-        prompt: Ignored for CoNeTTE
+        prompt: Ignored for CLAP captioner
 
     Returns:
         Text description
