@@ -53,10 +53,10 @@ cd vggsound-pipeline
 uv sync --extra cpu
 
 # Linux with CUDA 12.1 (e.g., Colab T4, older GPUs)
-uv sync --extra cu121
+uv sync --extra cuda
 
 # Linux with CUDA 12.4 (newer GPUs)
-uv sync --extra cu124
+uv sync --extra cuda
 
 # Add dev tools (pytest, ruff)
 uv sync --extra cpu --extra dev
@@ -69,10 +69,10 @@ uv sync --extra cpu --extra dev
 pip install -e ".[cpu]"
 
 # With CUDA 12.1
-pip install -e ".[cu121]"
+pip install -e ".[cuda]"
 
 # With CUDA 12.4
-pip install -e ".[cu124]"
+pip install -e ".[cuda]"
 ```
 
 ## Quick Start
@@ -179,7 +179,7 @@ export VGGSOUND_BATCH_SIZE=8
 
 ## Google Colab Setup
 
-Colab provides T4 GPUs with CUDA, so use the `cu121` extra:
+Colab provides T4 GPUs with CUDA, so use the `cuda` extra:
 
 ```python
 # Install uv (faster than pip)
@@ -189,11 +189,11 @@ Colab provides T4 GPUs with CUDA, so use the `cu121` extra:
 # Clone and install with CUDA support
 !git clone <repo_url>
 %cd vggsound-pipeline
-!uv sync --extra cu121
+!uv sync --extra cuda
 
 # Or use pip if you prefer
-!pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
-!pip install -e ".[cu121]"
+!pip install torch torchaudio --index-url https://download.pytorch.org/whl/cuda
+!pip install -e ".[cuda]"
 
 # Upload data and run
 !vggsound run vggsound_00.tar.gz vggsound.csv --sample-limit 200

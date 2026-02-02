@@ -21,13 +21,7 @@ cpu = [
     "accelerate>=0.27",
     # No bitsandbytes - on macOS it runs on CPU (not MPS), so fp16 on MPS is faster
 ]
-cu121 = [
-    "torch>=2.6",
-    "torchaudio>=2.6",
-    "accelerate>=0.27",
-    "bitsandbytes>=0.44",
-]
-cu124 = [
+cuda = [
     "torch>=2.6",
     "torchaudio>=2.6",
     "accelerate>=0.27",
@@ -50,29 +44,22 @@ environments = [
     "sys_platform == 'linux'",
 ]
 conflicts = [
-    [{ extra = "cpu" }, { extra = "cu121" }, { extra = "cu124" }],
+    [{ extra = "cpu" }, { extra = "cuda" }],
 ]
 
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu", marker = "sys_platform == 'linux'", extra = "cpu" },
-    { index = "pytorch-cu121", marker = "sys_platform == 'linux'", extra = "cu121" },
-    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cu124" },
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cuda" },
 ]
 torchaudio = [
     { index = "pytorch-cpu", marker = "sys_platform == 'linux'", extra = "cpu" },
-    { index = "pytorch-cu121", marker = "sys_platform == 'linux'", extra = "cu121" },
-    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cu124" },
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cuda" },
 ]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[[tool.uv.index]]
-name = "pytorch-cu121"
-url = "https://download.pytorch.org/whl/cu121"
 explicit = true
 
 [[tool.uv.index]]
