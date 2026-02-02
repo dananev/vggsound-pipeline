@@ -109,7 +109,7 @@ class MusicDetector:
 
         # Process audio
         audio_inputs = self.processor(
-            audios=waveform.squeeze().numpy(),
+            audio=waveform.squeeze().numpy(),
             sampling_rate=self._sample_rate,
             return_tensors="pt",
         )
