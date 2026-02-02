@@ -10,15 +10,15 @@ This pipeline processes VGGSound videos through multiple stages:
 2. **Label Pre-filtering**: Fast rejection of obvious music/speech labels
 3. **Speech Detection**: Silero VAD for voice activity detection
 4. **Music Detection**: CLAP zero-shot classification
-5. **Audio Captioning**: Qwen2-Audio rich descriptions
+5. **Audio Captioning**: CoNeTTE efficient descriptions (~10 samples/s)
 6. **Multimodal Verification** (optional): Qwen2.5-Omni for uncertain cases
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  1. EXTRACTION        2. FILTERING           3. CAPTIONING    4. OUTPUT     │
 │  ┌──────────────┐    ┌────────────────┐     ┌─────────────┐  ┌───────────┐ │
-│  │ MP4 → WAV    │───▶│ Speech: Silero │────▶│ Qwen2-Audio │─▶│  JSONL    │ │
-│  │ (ffmpeg)     │    │ Music: CLAP    │     │             │  │ + scores  │ │
+│  │ MP4 → WAV    │───▶│ Speech: Silero │────▶│  CoNeTTE    │─▶│  JSONL    │ │
+│  │ (ffmpeg)     │    │ Music: CLAP    │     │  (fast)     │  │ + scores  │ │
 │  └──────────────┘    └────────────────┘     └─────────────┘  └───────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -28,7 +28,7 @@ This pipeline processes VGGSound videos through multiple stages:
 ### System Requirements
 
 - Python 3.10+
-- PyTorch 2.3+ (required for bitsandbytes)
+- PyTorch 2.3+
 - ffmpeg (for audio extraction)
 - Supported platforms:
   - **Linux** (x86_64, aarch64) - CPU or CUDA GPU
@@ -164,8 +164,11 @@ Fields:
 |-----------|-------|---------|
 | Speech Detection | Silero VAD | Fast CPU-based voice detection |
 | Music Detection | CLAP (laion/larger_clap_music_and_speech) | Zero-shot audio classification |
-| Captioning | Qwen2-Audio-7B-Instruct | Rich audio descriptions |
+| Captioning | CoNeTTE (~100M params) | Fast, production-ready captioning (~10/s) |
 | Multimodal | Qwen2.5-Omni-7B | Video+audio verification |
+
+> **Note**: CoNeTTE was chosen over Qwen2-Audio for production scalability (10x throughput, 1/40th memory).
+> See [IMPLEMENTATION_DETAILS.md](IMPLEMENTATION_DETAILS.md) for the full tradeoff analysis.
 
 ## Configuration
 
@@ -219,8 +222,17 @@ uv run ruff format .
 
 1. **Silero VAD**: Extremely fast (<1ms/chunk), works great on CPU, no GPU needed
 2. **CLAP**: Zero-shot classification means no training needed; specifically trained on music+speech
-3. **Qwen2-Audio**: SOTA audio understanding, fits in T4 GPU with 8-bit quantization
+3. **CoNeTTE**: Purpose-built for audio captioning, 10x faster than LLM-based approaches
 4. **Qwen2.5-Omni**: When audio-only is uncertain, video context helps disambiguate
+
+### Why CoNeTTE over Qwen2-Audio?
+
+For production-scale data pipelines processing TBs/day:
+- **Throughput**: ~10 samples/s vs ~1 sample/s (10x faster)
+- **Memory**: ~2GB VRAM vs 15-80GB (runs on any GPU)
+- **Quality**: SPIDEr 44% vs ~55% (acceptable tradeoff for pretraining data)
+
+For eval sets requiring highest quality, use Qwen3-Omni-30B-A3B-Captioner via vLLM on A100s.
 
 ### Confidence Levels
 
@@ -233,18 +245,18 @@ uv run ruff format .
 ### Memory Management
 
 - Models loaded sequentially (not all at once)
-- 8-bit quantization on CUDA GPUs (fits 7B models in 16GB VRAM)
-- fp16 on MPS and CPU (uses more memory but no bitsandbytes needed)
-- CUDA cache cleared periodically
-- Checkpointing for long runs
+- CoNeTTE is lightweight (~2GB VRAM), runs on any GPU including T4
+- CLAP model (~1.5GB) unloaded before captioning
+- CUDA cache cleared between stages
+- Checkpointing for long runs and resume support
 
 ### Platform Notes
 
-| Platform | Precision | Notes |
-|----------|-----------|-------|
-| CUDA (Linux/Windows) | int8 (bitsandbytes) | Best performance, lowest memory |
-| MPS (Apple Silicon) | fp16 | GPU-accelerated, good performance |
-| CPU | fp16 | Slowest, fallback option |
+| Platform | Notes |
+|----------|-------|
+| CUDA (Linux/Windows) | Best performance, CoNeTTE uses ~2GB VRAM |
+| MPS (Apple Silicon) | GPU-accelerated, good performance |
+| CPU | Slower but functional, CoNeTTE is lightweight |
 
 ## License
 
