@@ -28,7 +28,7 @@ This pipeline processes VGGSound videos through multiple stages:
 ### System Requirements
 
 - Python 3.10+
-- PyTorch 2.3+
+- PyTorch 2.6+
 - ffmpeg (for audio extraction)
 - Supported platforms:
   - **Linux** (x86_64, aarch64) - CPU or CUDA GPU
@@ -52,10 +52,7 @@ cd vggsound-pipeline
 # Apple Silicon Mac or Linux CPU-only
 uv sync --extra cpu
 
-# Linux with CUDA 12.1 (e.g., Colab T4, older GPUs)
-uv sync --extra cuda
-
-# Linux with CUDA 12.4 (newer GPUs)
+# Linux with CUDA 12.4 (Colab, cloud GPUs)
 uv sync --extra cuda
 
 # Add dev tools (pytest, ruff)
@@ -68,10 +65,7 @@ uv sync --extra cpu --extra dev
 # CPU-only (macOS or Linux)
 pip install -e ".[cpu]"
 
-# With CUDA 12.1
-pip install -e ".[cuda]"
-
-# With CUDA 12.4
+# With CUDA 12.4 (Colab, cloud GPUs)
 pip install -e ".[cuda]"
 ```
 
@@ -256,9 +250,9 @@ For eval sets requiring highest quality, consider Qwen3-Omni-30B-A3B-Captioner v
 
 | Platform | Notes |
 |----------|-------|
-| CUDA (Linux/Windows) | Best performance, CoNeTTE uses ~2GB VRAM |
+| CUDA (Linux/Windows) | Best performance, MS CLAP uses ~2-3GB VRAM |
 | MPS (Apple Silicon) | GPU-accelerated, good performance |
-| CPU | Slower but functional, CoNeTTE is lightweight |
+| CPU | Slower but functional, MS CLAP is lightweight |
 
 ## License
 
