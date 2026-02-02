@@ -82,6 +82,11 @@ def run(
         "--cache-dir",
         help="Directory for caching extracted files",
     ),
+    hf_cache_dir: Path = typer.Option(
+        Path(".cache/huggingface"),
+        "--hf-cache-dir",
+        help="Directory for caching HuggingFace model weights",
+    ),
     resume: bool = typer.Option(
         False,
         "--resume",
@@ -117,6 +122,7 @@ def run(
         batch_size=batch_size,
         num_workers=num_workers,
         cache_dir=cache_dir,
+        hf_cache_dir=hf_cache_dir,
     )
 
     # Ensure output directory exists

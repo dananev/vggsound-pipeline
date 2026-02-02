@@ -40,12 +40,13 @@ class MusicDetector:
     # Model identifier
     MODEL_ID = "laion/larger_clap_music_and_speech"
 
-    def __init__(self, device: str = "auto", labels: list[str] | None = None):
+    def __init__(self, device: str = "auto", labels: list[str] | None = None, cache_dir: str | None = None):
         """Initialize CLAP model.
 
         Args:
             device: Device for inference ("auto", "cuda", "cpu", "mps")
             labels: Custom classification labels (uses defaults if None)
+            cache_dir: Directory to cache model weights (uses HF default if None)
         """
         if device == "auto":
             if torch.cuda.is_available():
@@ -56,6 +57,7 @@ class MusicDetector:
                 device = "cpu"
         self.device = device
         self.labels = labels or self.DEFAULT_LABELS
+        self.cache_dir = cache_dir
         self.model = None
         self.processor = None
         self._sample_rate = 48000  # CLAP expects 48kHz
@@ -66,8 +68,8 @@ class MusicDetector:
             return
 
         print(f"Loading CLAP model on {self.device}...")
-        self.processor = AutoProcessor.from_pretrained(self.MODEL_ID)
-        self.model = ClapModel.from_pretrained(self.MODEL_ID).to(self.device)
+        self.processor = AutoProcessor.from_pretrained(self.MODEL_ID, cache_dir=self.cache_dir)
+        self.model = ClapModel.from_pretrained(self.MODEL_ID, cache_dir=self.cache_dir).to(self.device)
         # Set model to inference mode (not training)
         self.model.requires_grad_(False)
 

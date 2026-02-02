@@ -178,8 +178,9 @@ def run_pipeline(
     from .music_detector import MusicDetector
     from .speech_detector import SpeechDetector
 
+    hf_cache = str(config.hf_cache_dir)
     speech_detector = SpeechDetector(device="cpu")  # VAD runs best on CPU
-    music_detector = MusicDetector(device=device)
+    music_detector = MusicDetector(device=device, cache_dir=hf_cache)
 
     # Process samples
     audio_paths_to_process = [
@@ -268,17 +269,28 @@ def run_pipeline(
         print(f"\n[7/7] Generating captions for {len(accepted_samples)} samples...")
         from .captioner import AudioCaptioner
 
-        captioner = AudioCaptioner(device=device)
+        captioner = AudioCaptioner(device=device, cache_dir=hf_cache)
 
-        for sample in tqdm(accepted_samples, desc="Captioning"):
-            if sample.audio_path:
-                try:
-                    sample.caption = captioner.caption(sample.audio_path)
-                except Exception as e:
-                    sample.caption = f"Error: {e}"
-                    sample.error = str(e)
+        # Load model ONCE before loop - if this fails, skip all captioning
+        try:
+            captioner.load_model()
+        except Exception as e:
+            print(f"  Failed to load captioning model: {e}")
+            print("  Using original labels as fallback...")
+            for sample in accepted_samples:
+                sample.caption = sample.metadata.label
+            captioner = None
 
-            # Clear cache periodically
+        if captioner is not None:
+            for sample in tqdm(accepted_samples, desc="Captioning"):
+                if sample.audio_path:
+                    try:
+                        sample.caption = captioner.caption(sample.audio_path)
+                    except Exception as e:
+                        sample.caption = sample.metadata.label  # Fallback to original label
+                        sample.error = str(e)
+
+            # Clear cache after captioning
             if device == "cuda":
                 torch.cuda.empty_cache()
 

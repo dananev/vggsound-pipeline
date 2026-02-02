@@ -84,6 +84,10 @@ class PipelineConfig(BaseSettings):
         default=Path(".cache/vggsound"),
         description="Directory for caching extracted files",
     )
+    hf_cache_dir: Path = Field(
+        default=Path(".cache/huggingface"),
+        description="Directory for caching HuggingFace model weights",
+    )
 
     model_config = {"env_prefix": "VGGSOUND_"}
 
