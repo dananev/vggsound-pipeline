@@ -194,6 +194,11 @@ def run_pipeline(
     print("  Running music detection...")
     music_results = music_detector.classify_batch(audio_paths_to_process)
 
+    # Free GPU memory before captioning
+    del music_detector
+    if device == "cuda":
+        torch.cuda.empty_cache()
+
     # Combine results and filter
     accepted_samples = []
     low_confidence_samples = []

@@ -82,6 +82,8 @@ class AudioCaptioner:
                     self.MODEL_ID,
                     quantization_config=quantization_config,
                     device_map="auto",
+                    low_cpu_mem_usage=True,
+                    attn_implementation="sdpa",  # PyTorch native scaled dot-product attention
                 )
             except ImportError:
                 print("bitsandbytes not available, loading in full precision")
@@ -89,11 +91,15 @@ class AudioCaptioner:
                     self.MODEL_ID,
                     torch_dtype=torch.float16,
                     device_map="auto",
+                    low_cpu_mem_usage=True,
+                    attn_implementation="sdpa",
                 )
         else:
             self.model = Qwen2AudioForConditionalGeneration.from_pretrained(
                 self.MODEL_ID,
                 torch_dtype=torch.float16,
+                low_cpu_mem_usage=True,
+                attn_implementation="sdpa",
             ).to(self.device)
 
     def caption(self, audio_path: Path, prompt: str | None = None) -> str:
@@ -156,7 +162,7 @@ class AudioCaptioner:
         with torch.no_grad():
             generated_ids = self.model.generate(
                 **inputs,
-                max_new_tokens=256,
+                max_new_tokens=128,  # Reduced for speed, still detailed
                 do_sample=False,  # Deterministic output
             )
 
