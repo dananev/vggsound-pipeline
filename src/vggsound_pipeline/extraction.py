@@ -193,6 +193,19 @@ def extract_audio_ffmpeg(
         return False
 
 
+def _process_video_worker(args: tuple) -> tuple[Path, Path | None]:
+    """Worker function for parallel audio extraction.
+
+    Must be at module level for pickling with ProcessPoolExecutor.
+    """
+    video_path, output_dir, sample_rate, channels = args
+    audio_path = output_dir / f"{video_path.stem}.wav"
+    if audio_path.exists():
+        return video_path, audio_path
+    success = extract_audio_ffmpeg(video_path, audio_path, sample_rate, channels)
+    return video_path, audio_path if success else None
+
+
 def extract_audio_batch(
     video_paths: list[Path],
     output_dir: Path,
@@ -216,15 +229,11 @@ def extract_audio_batch(
     output_dir.mkdir(parents=True, exist_ok=True)
     results = {}
 
-    def process_video(video_path: Path) -> tuple[Path, Path | None]:
-        audio_path = output_dir / f"{video_path.stem}.wav"
-        if audio_path.exists():
-            return video_path, audio_path
-        success = extract_audio_ffmpeg(video_path, audio_path, sample_rate, channels)
-        return video_path, audio_path if success else None
+    # Prepare args for worker function
+    work_items = [(vp, output_dir, sample_rate, channels) for vp in video_paths]
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = {executor.submit(process_video, vp): vp for vp in video_paths}
+        futures = {executor.submit(_process_video_worker, item): item[0] for item in work_items}
 
         for future in tqdm(
             as_completed(futures), total=len(futures), desc="Extracting audio"
