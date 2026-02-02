@@ -153,14 +153,14 @@ class TestMusicDetector:
         assert detector.model is not None
 
 
-@pytest.mark.skip(reason="Requires model download")
-class TestAudioCaptioner:
-    """Integration tests for audio captioning using MS CLAP clapcap."""
+@pytest.mark.skip(reason="Requires model download and video-SALMONN-2 repo")
+class TestCaptioner:
+    """Integration tests for video-audio captioning using video-SALMONN-2+."""
 
     def test_load_model(self):
         """Test model loading."""
-        from vggsound_pipeline.captioner import AudioCaptioner
+        from vggsound_pipeline.captioner import Captioner
 
-        captioner = AudioCaptioner(device="cpu")
+        captioner = Captioner(device="cpu")
         captioner.load_model()
         assert captioner.model is not None

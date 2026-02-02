@@ -4,14 +4,18 @@ version = "0.1.0"
 description = "Filter VGGSound for sound effects with ML-based classification"
 requires-python = ">=3.10"
 dependencies = [
-    "transformers>=4.40",
+    "transformers>=4.48",
     "typer>=0.9",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "orjson>=3.9",
     "tqdm>=4.65",
     "ffmpeg-python>=0.2",
-    "msclap>=1.0",
+    "decord>=0.6",
+    "soundfile>=0.12",
+    "peft>=0.10",
+    "safetensors>=0.4",
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +31,14 @@ cuda = [
     "torchaudio>=2.6",
     "torchcodec>=0.1",
     "accelerate>=0.27",
+]
+cuda-fast = [
+    "torch>=2.6,<2.10",
+    "torchaudio>=2.6,<2.10",
+    "torchcodec>=0.1",
+    "accelerate>=0.27",
+    "flash-attn>=2.5",
+    "liger-kernel>=0.5",
 ]
 
 [project.scripts]
@@ -46,16 +58,24 @@ environments = [
 ]
 conflicts = [
     [{ extra = "cpu" }, { extra = "cuda" }],
+    [{ extra = "cpu" }, { extra = "cuda-fast" }],
+    [{ extra = "cuda" }, { extra = "cuda-fast" }],
 ]
+
+[tool.uv.extra-build-dependencies]
+flash-attn = ["torch"]
+liger-kernel = ["torch"]
 
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu", marker = "sys_platform == 'linux'", extra = "cpu" },
     { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cuda" },
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cuda-fast" },
 ]
 torchaudio = [
     { index = "pytorch-cpu", marker = "sys_platform == 'linux'", extra = "cpu" },
     { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cuda" },
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux'", extra = "cuda-fast" },
 ]
 
 [[tool.uv.index]]

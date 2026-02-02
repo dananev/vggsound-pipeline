@@ -1,7 +1,4 @@
-"""Command-line interface for the VGGSound filtering pipeline.
-
-Uses Typer for a modern CLI experience with type hints and auto-generated help.
-"""
+"""Command-line interface for the VGGSound filtering pipeline."""
 
 from pathlib import Path
 
@@ -30,7 +27,8 @@ def run(
     ),
     output: Path = typer.Option(
         Path("output/sfx_filtered.jsonl"),
-        "--output", "-o",
+        "--output",
+        "-o",
         help="Output JSONL file path",
     ),
     skip_label_filter: bool = typer.Option(
@@ -41,25 +39,28 @@ def run(
     enable_multimodal: bool = typer.Option(
         False,
         "--enable-multimodal",
-        help="Enable Qwen2.5-Omni for low-confidence samples",
+        help="Enable multimodal verification for low-confidence samples",
     ),
     batch_size: int = typer.Option(
         8,
-        "--batch-size", "-b",
+        "--batch-size",
+        "-b",
         help="Batch size for GPU inference",
         min=1,
         max=64,
     ),
     num_workers: int = typer.Option(
         4,
-        "--num-workers", "-w",
+        "--num-workers",
+        "-w",
         help="Workers for parallel audio extraction",
         min=1,
         max=32,
     ),
     sample_limit: int | None = typer.Option(
         None,
-        "--sample-limit", "-n",
+        "--sample-limit",
+        "-n",
         help="Limit number of samples (for testing/demo)",
         min=1,
     ),
@@ -97,7 +98,7 @@ def run(
         "--device",
         help="Device for inference: 'auto', 'cuda', 'cpu', or 'mps'",
     ),
-):
+) -> None:
     """Filter VGGSound dataset to extract sound effects only.
 
     This pipeline:
@@ -106,7 +107,7 @@ def run(
     3. Optionally pre-filters by VGGSound labels
     4. Detects speech using Silero VAD
     5. Detects music using CLAP model
-    6. Generates captions using Qwen2-Audio
+    6. Generates captions using video-SALMONN-2+
     7. Outputs filtered results to JSONL
 
     Example:
@@ -115,7 +116,6 @@ def run(
     from .config import PipelineConfig
     from .pipeline import run_pipeline
 
-    # Build configuration
     config = PipelineConfig(
         speech_threshold=speech_threshold,
         music_threshold=music_threshold,
@@ -125,10 +125,8 @@ def run(
         hf_cache_dir=hf_cache_dir,
     )
 
-    # Ensure output directory exists
     output.parent.mkdir(parents=True, exist_ok=True)
 
-    # Run the pipeline
     run_pipeline(
         input_tar=input_tar,
         csv_path=csv_path,
@@ -152,7 +150,8 @@ def validate(
     ),
     sample_size: int = typer.Option(
         50,
-        "--sample-size", "-n",
+        "--sample-size",
+        "-n",
         help="Number of random samples to validate",
         min=1,
         max=500,
@@ -162,17 +161,8 @@ def validate(
         "--audio-dir",
         help="Directory containing WAV files for playback",
     ),
-):
-    """Validate output quality with random sampling and statistics.
-
-    Displays:
-    - Distribution of confidence scores
-    - Sample captions for review
-    - Option to play audio samples (if audio_dir provided)
-
-    Example:
-        vggsound validate output/sfx_filtered.jsonl --sample-size 20
-    """
+) -> None:
+    """Validate output quality with random sampling and statistics."""
     from .validation import validate_output
 
     validate_output(
@@ -190,17 +180,8 @@ def stats(
         exists=True,
         readable=True,
     ),
-):
-    """Show statistics about the pipeline output.
-
-    Displays:
-    - Total samples processed
-    - Score distributions
-    - Confidence level breakdown
-
-    Example:
-        vggsound stats output/sfx_filtered.jsonl
-    """
+) -> None:
+    """Show statistics about the pipeline output."""
     from .validation import show_stats
 
     show_stats(jsonl_path)
@@ -215,20 +196,12 @@ def extract_labels(
     ),
     output: Path = typer.Option(
         Path("output/label_categories.json"),
-        "--output", "-o",
+        "--output",
+        "-o",
         help="Output JSON file for label categorization",
     ),
-):
-    """Extract and categorize unique labels from VGGSound metadata.
-
-    Categorizes 310 VGGSound labels into:
-    - music: Labels indicating music (playing instruments, singing, etc.)
-    - speech: Labels indicating speech/voice
-    - sfx: Sound effects (everything else)
-
-    Example:
-        vggsound extract-labels vggsound.csv
-    """
+) -> None:
+    """Extract and categorize unique labels from VGGSound metadata."""
     from .label_filter import extract_and_categorize_labels
 
     extract_and_categorize_labels(csv_path, output)

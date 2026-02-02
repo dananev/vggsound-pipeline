@@ -5,7 +5,7 @@ Coordinates all stages of the VGGSound filtering pipeline:
 2. Label-based pre-filtering (optional)
 3. Speech detection (Silero VAD)
 4. Music detection (CLAP)
-5. Audio captioning (Qwen2-Audio)
+5. Audio-visual captioning (video-SALMONN-2+)
 6. Multimodal verification (optional)
 7. Output generation (JSONL)
 """
@@ -45,6 +45,52 @@ class ProcessedSample:
     error: str | None = None
 
 
+def _caption_sample(sample: ProcessedSample, captioner) -> None:
+    """Generate caption for a single sample, updating it in place."""
+    if not sample.video_path:
+        sample.caption = sample.metadata.label
+        return
+
+    try:
+        caption = captioner.caption(
+            video_path=sample.video_path,
+            audio_path=sample.audio_path,
+        )
+        sample.caption = caption if caption else sample.metadata.label
+    except Exception as e:
+        sample.caption = sample.metadata.label
+        sample.error = str(e)
+        print(f"  Caption error for {sample.video_id}: {e}")
+
+
+def _run_captioning(
+    samples: list[ProcessedSample],
+    device: str,
+    cache_dir: str,
+) -> None:
+    """Run captioning on all accepted samples."""
+    print(f"\n[7/7] Generating captions for {len(samples)} samples...")
+
+    from .captioner import Captioner
+
+    captioner = Captioner(device=device, cache_dir=cache_dir)
+
+    try:
+        captioner.load_model()
+    except Exception as e:
+        print(f"  Failed to load captioner: {e}")
+        print("  Using original labels as fallback...")
+        for sample in samples:
+            sample.caption = sample.metadata.label
+        return
+
+    for sample in tqdm(samples, desc="Captioning"):
+        _caption_sample(sample, captioner)
+
+    if device == "cuda":
+        torch.cuda.empty_cache()
+
+
 def run_pipeline(
     input_tar: Path,
     csv_path: Path,
@@ -55,7 +101,7 @@ def run_pipeline(
     sample_limit: int | None = None,
     resume: bool = False,
     device: str = "auto",
-):
+) -> None:
     """Run the full VGGSound filtering pipeline.
 
     Args:
@@ -70,7 +116,7 @@ def run_pipeline(
         device: Device for inference
     """
     print("VGGSound Pipeline Starting")
-    print(f"{'='*60}")
+    print("=" * 60)
     print(f"Input: {input_tar}")
     print(f"CSV: {csv_path}")
     print(f"Output: {output_path}")
@@ -79,7 +125,7 @@ def run_pipeline(
     print(f"Multimodal: {'enabled' if enable_multimodal else 'disabled'}")
     if sample_limit:
         print(f"Sample limit: {sample_limit}")
-    print(f"{'='*60}\n")
+    print("=" * 60 + "\n")
 
     # Resolve device
     if device == "auto":
@@ -98,7 +144,7 @@ def run_pipeline(
     checkpoint_path = config.cache_dir / "checkpoint.json"
 
     # Load checkpoint if resuming
-    processed_ids = set()
+    processed_ids: set[str] = set()
     if resume and checkpoint_path.exists():
         with open(checkpoint_path, "rb") as f:
             checkpoint = orjson.loads(f.read())
@@ -110,28 +156,24 @@ def run_pipeline(
     all_metadata = parse_vggsound_csv(csv_path)
     print(f"  Total samples in CSV: {len(all_metadata)}")
 
-    # Get videos in tar
+    # Step 2: Scan tar archive
     print("\n[2/7] Scanning tar archive...")
     tar_videos = get_videos_in_tar(input_tar)
     print(f"  Videos in tar: {len(tar_videos)}")
 
     # Filter metadata to only include videos we have
     metadata_lookup = {m.sample_id: m for m in all_metadata}
-    available_ids = {
-        Path(v).stem for v in tar_videos
-    } & set(metadata_lookup.keys())
+    available_ids = {Path(v).stem for v in tar_videos} & set(metadata_lookup.keys())
     print(f"  Matched samples: {len(available_ids)}")
 
-    # Apply sample limit
     if sample_limit:
         available_ids = set(list(available_ids)[:sample_limit])
         print(f"  Limited to: {len(available_ids)}")
 
-    # Remove already processed
     available_ids -= processed_ids
     print(f"  To process: {len(available_ids)}")
 
-    # Step 2: Label-based pre-filtering
+    # Step 3: Label-based pre-filtering
     candidates = [metadata_lookup[sid] for sid in available_ids]
 
     if not skip_label_filter:
@@ -148,18 +190,14 @@ def run_pipeline(
         print("No candidates to process after filtering.")
         return
 
-    # Step 3: Extract videos
+    # Step 4: Extract videos
     print(f"\n[4/7] Extracting {len(candidates)} videos...")
     candidate_ids = {c.sample_id for c in candidates}
-    video_paths = extract_videos_from_tar(
-        input_tar,
-        video_dir,
-        video_ids=candidate_ids,
-    )
+    video_paths = extract_videos_from_tar(input_tar, video_dir, video_ids=candidate_ids)
     video_path_map = {vp.stem: vp for vp in video_paths}
     print(f"  Extracted: {len(video_paths)} videos")
 
-    # Step 4: Extract audio
+    # Step 5: Extract audio
     print("\n[5/7] Extracting audio...")
     audio_mapping = extract_audio_batch(
         video_paths,
@@ -168,13 +206,12 @@ def run_pipeline(
         channels=config.audio_channels,
         num_workers=config.num_workers,
     )
-    audio_path_map = {ap.stem: ap for vp, ap in audio_mapping.items()}
+    audio_path_map = {ap.stem: ap for ap in audio_mapping.values()}
     print(f"  Extracted: {len(audio_mapping)} audio files")
 
-    # Step 5: ML-based filtering
+    # Step 6: ML-based filtering
     print("\n[6/7] ML-based filtering...")
 
-    # Initialize detectors
     from .music_detector import MusicDetector
     from .speech_detector import SpeechDetector
 
@@ -182,11 +219,8 @@ def run_pipeline(
     speech_detector = SpeechDetector(device="cpu")  # VAD runs best on CPU
     music_detector = MusicDetector(device=device, cache_dir=hf_cache)
 
-    # Process samples
     audio_paths_to_process = [
-        audio_path_map[c.sample_id]
-        for c in candidates
-        if c.sample_id in audio_path_map
+        audio_path_map[c.sample_id] for c in candidates if c.sample_id in audio_path_map
     ]
 
     print("  Running speech detection...")
@@ -195,14 +229,13 @@ def run_pipeline(
     print("  Running music detection...")
     music_results = music_detector.classify_batch(audio_paths_to_process)
 
-    # Free GPU memory before captioning
     del music_detector
     if device == "cuda":
         torch.cuda.empty_cache()
 
     # Combine results and filter
-    accepted_samples = []
-    low_confidence_samples = []
+    accepted_samples: list[ProcessedSample] = []
+    low_confidence_samples: list[ProcessedSample] = []
     rejected_count = 0
 
     for candidate in candidates:
@@ -210,12 +243,8 @@ def run_pipeline(
             continue
 
         audio_path = audio_path_map[candidate.sample_id]
-        speech_result = speech_results.get(audio_path, {})
-        music_result = music_results.get(audio_path, {})
-
-        speech_score = speech_result.get("speech_ratio", 1.0)
-        music_score = music_result.get("music_score", 1.0)
-
+        speech_score = speech_results.get(audio_path, {}).get("speech_ratio", 1.0)
+        music_score = music_results.get(audio_path, {}).get("music_score", 1.0)
         confidence, is_accepted = config.get_confidence_level(speech_score, music_score)
 
         sample = ProcessedSample(
@@ -240,65 +269,33 @@ def run_pipeline(
     print(f"  Low confidence (for multimodal): {len(low_confidence_samples)}")
     print(f"  Rejected: {rejected_count}")
 
-    # Step 6: Multimodal verification (if enabled)
+    # Step 6b: Multimodal verification (if enabled)
     if enable_multimodal and low_confidence_samples:
         print(f"\n[6b] Multimodal verification for {len(low_confidence_samples)} samples...")
         from .multimodal import MultimodalVerifier
 
         verifier = MultimodalVerifier(device=device)
         for sample in tqdm(low_confidence_samples, desc="Multimodal"):
-            if sample.video_path:
-                try:
-                    result = verifier.verify(sample.video_path)
-                    sample.multimodal_result = result
+            if not sample.video_path:
+                continue
+            try:
+                result = verifier.verify(sample.video_path)
+                sample.multimodal_result = result
 
-                    # Accept if multimodal confirms SFX
-                    if result.get("has_music") is False and result.get("has_speech") is False:
-                        sample.confidence = "multimodal_verified"
-                        accepted_samples.append(sample)
-                    elif result.get("is_sfx") is True:
-                        sample.confidence = "multimodal_verified"
-                        accepted_samples.append(sample)
-                except Exception as e:
-                    print(f"  Error: {e}")
+                if result.get("has_music") is False and result.get("has_speech") is False:
+                    sample.confidence = "multimodal_verified"
+                    accepted_samples.append(sample)
+                elif result.get("is_sfx") is True:
+                    sample.confidence = "multimodal_verified"
+                    accepted_samples.append(sample)
+            except Exception as e:
+                print(f"  Error: {e}")
 
         print(f"  Total accepted after multimodal: {len(accepted_samples)}")
 
-    # Step 7: Audio captioning
+    # Step 7: Captioning
     if accepted_samples:
-        print(f"\n[7/7] Generating captions for {len(accepted_samples)} samples...")
-        from .captioner import AudioCaptioner
-
-        captioner = AudioCaptioner(device=device, cache_dir=hf_cache)
-
-        # Load model ONCE before loop - if this fails, skip all captioning
-        try:
-            captioner.load_model()
-        except Exception as e:
-            print(f"  Failed to load captioning model: {e}")
-            print("  Using original labels as fallback...")
-            for sample in accepted_samples:
-                sample.caption = sample.metadata.label
-            captioner = None
-
-        if captioner is not None:
-            for sample in tqdm(accepted_samples, desc="Captioning"):
-                if sample.audio_path:
-                    try:
-                        caption = captioner.caption(sample.audio_path)
-                        if caption:
-                            sample.caption = caption
-                        else:
-                            sample.caption = sample.metadata.label
-                            print(f"  Empty caption for {sample.video_id}, using label")
-                    except Exception as e:
-                        sample.caption = sample.metadata.label  # Fallback to original label
-                        sample.error = str(e)
-                        print(f"  Caption error for {sample.video_id}: {e}")
-
-            # Clear cache after captioning
-            if device == "cuda":
-                torch.cuda.empty_cache()
+        _run_captioning(accepted_samples, device, hf_cache)
 
     # Write output
     print(f"\nWriting output to {output_path}...")
@@ -322,10 +319,10 @@ def run_pipeline(
         f.write(orjson.dumps({"processed_ids": list(new_processed)}))
 
     # Summary
-    print(f"\n{'='*60}")
+    print("\n" + "=" * 60)
     print("Pipeline Complete!")
-    print(f"{'='*60}")
+    print("=" * 60)
     print(f"Total processed: {len(candidates)}")
     print(f"Accepted as SFX: {len(accepted_samples)}")
     print(f"Output: {output_path}")
-    print(f"{'='*60}")
+    print("=" * 60)
