@@ -19,12 +19,13 @@ dev = ["ruff", "pytest", "pytest-cov"]
 cpu = [
     "torch>=2.6",
     "torchaudio>=2.6",
+    "torchcodec>=0.1",
     "accelerate>=0.27",
-    # No bitsandbytes - on macOS it runs on CPU (not MPS), so fp16 on MPS is faster
 ]
 cuda = [
     "torch>=2.6",
     "torchaudio>=2.6",
+    "torchcodec>=0.1",
     "accelerate>=0.27",
 ]
 

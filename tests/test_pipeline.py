@@ -151,3 +151,16 @@ class TestMusicDetector:
         detector = MusicDetector(device="cpu")
         detector.load_model()
         assert detector.model is not None
+
+
+@pytest.mark.skip(reason="Requires model download")
+class TestAudioCaptioner:
+    """Integration tests for audio captioning using MS CLAP clapcap."""
+
+    def test_load_model(self):
+        """Test model loading."""
+        from vggsound_pipeline.captioner import AudioCaptioner
+
+        captioner = AudioCaptioner(device="cpu")
+        captioner.load_model()
+        assert captioner.model is not None
