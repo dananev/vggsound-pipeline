@@ -83,7 +83,7 @@ def run(
         help="Directory for caching extracted files",
     ),
     hf_cache_dir: Path = typer.Option(
-        Path(".cache/huggingface"),
+        Path("/content/hf_cache"),
         "--hf-cache-dir",
         help="Directory for caching HuggingFace model weights",
     ),

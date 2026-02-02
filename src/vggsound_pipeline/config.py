@@ -85,7 +85,7 @@ class PipelineConfig(BaseSettings):
         description="Directory for caching extracted files",
     )
     hf_cache_dir: Path = Field(
-        default=Path(".cache/huggingface"),
+        default=Path("/content/hf_cache"),
         description="Directory for caching HuggingFace model weights",
     )
 
