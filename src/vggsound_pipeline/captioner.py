@@ -121,18 +121,17 @@ class AudioCaptioner:
         )
 
         # Process inputs
-        audios = [waveform.squeeze().numpy()]
+        audio_array = waveform.squeeze().numpy()
         inputs = self.processor(
             text=text,
-            audios=audios,
+            audio=audio_array,
             sampling_rate=self._sample_rate,
             return_tensors="pt",
             padding=True,
         )
 
-        # Move to device
-        if not self.use_8bit:
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        # Move inputs to model device (device_map="auto" handles model placement)
+        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
         # Generate caption
         with torch.no_grad():
