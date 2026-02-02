@@ -79,10 +79,10 @@ class MusicDetector:
                 padding=True,
             )
             text_inputs = {k: v.to(self.device) for k, v in text_inputs.items()}
-            self._text_embeddings = self.model.get_text_features(**text_inputs)
-            self._text_embeddings = self._text_embeddings / self._text_embeddings.norm(
-                dim=-1, keepdim=True
-            )
+            text_output = self.model.get_text_features(**text_inputs)
+            # get_text_features returns BaseModelOutputWithPooling in newer transformers
+            text_embeds = text_output.pooler_output if hasattr(text_output, "pooler_output") else text_output
+            self._text_embeddings = text_embeds / text_embeds.norm(dim=-1, keepdim=True)
 
     def classify(self, audio_path: Path) -> dict[str, float]:
         """Classify audio using zero-shot CLAP.
@@ -117,8 +117,11 @@ class MusicDetector:
 
         # Get audio embedding
         with torch.no_grad():
-            audio_embedding = self.model.get_audio_features(**audio_inputs)
-            audio_embedding = audio_embedding / audio_embedding.norm(dim=-1, keepdim=True)
+            audio_features = self.model.get_audio_features(**audio_inputs)
+            # Handle both tensor and object returns (newer transformers)
+            if hasattr(audio_features, "pooler_output"):
+                audio_features = audio_features.pooler_output
+            audio_embedding = audio_features / audio_features.norm(dim=-1, keepdim=True)
 
             # Compute similarities with pre-computed text embeddings
             similarities = (audio_embedding @ self._text_embeddings.T).squeeze()
