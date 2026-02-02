@@ -24,7 +24,7 @@ class AudioCaptioner:
     including details about sounds, their sources, and acoustic qualities.
     """
 
-    MODEL_ID = "Qwen/Qwen2-Audio-7B-Instruct"
+    MODEL_ID = "mlinmg/Qwen-2-Audio-Instruct-dynamic-fp8"
 
     # Default prompt for captioning
     DEFAULT_PROMPT = (
