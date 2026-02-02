@@ -36,7 +36,6 @@ class AudioCaptioner:
     def __init__(
         self,
         device: str = "auto",
-        use_8bit: bool = True,
         prompt: str | None = None,
         cache_dir: str | None = None,
     ):
@@ -44,7 +43,6 @@ class AudioCaptioner:
 
         Args:
             device: Device for inference ("auto", "cuda", "cpu", "mps")
-            use_8bit: Use 8-bit quantization for memory efficiency
             prompt: Custom prompt for captioning (uses default if None)
             cache_dir: Directory to cache model weights (uses HF default if None)
         """
@@ -56,7 +54,6 @@ class AudioCaptioner:
             else:
                 device = "cpu"
         self.device = device
-        self.use_8bit = use_8bit and device == "cuda"  # 8-bit only works on CUDA
         self.prompt = prompt or self.DEFAULT_PROMPT
         self.cache_dir = cache_dir
         self.model = None
@@ -72,41 +69,14 @@ class AudioCaptioner:
 
         self.processor = AutoProcessor.from_pretrained(self.MODEL_ID, cache_dir=self.cache_dir)
 
-        # Configure quantization for memory efficiency
-        if self.use_8bit:
-            try:
-                from transformers import BitsAndBytesConfig
-
-                quantization_config = BitsAndBytesConfig(
-                    load_in_8bit=True,
-                    llm_int8_threshold=6.0,
-                )
-                self.model = Qwen2AudioForConditionalGeneration.from_pretrained(
-                    self.MODEL_ID,
-                    quantization_config=quantization_config,
-                    device_map="auto",
-                    low_cpu_mem_usage=True,
-                    attn_implementation="sdpa",
-                    cache_dir=self.cache_dir,
-                )
-            except ImportError:
-                print("bitsandbytes not available, loading in full precision")
-                self.model = Qwen2AudioForConditionalGeneration.from_pretrained(
-                    self.MODEL_ID,
-                    torch_dtype=torch.float16,
-                    device_map="auto",
-                    low_cpu_mem_usage=True,
-                    attn_implementation="sdpa",
-                    cache_dir=self.cache_dir,
-                )
-        else:
-            self.model = Qwen2AudioForConditionalGeneration.from_pretrained(
-                self.MODEL_ID,
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                attn_implementation="sdpa",
-                cache_dir=self.cache_dir,
-            ).to(self.device)
+        # Load model (FP8 models are pre-quantized, no additional quantization needed)
+        self.model = Qwen2AudioForConditionalGeneration.from_pretrained(
+            self.MODEL_ID,
+            device_map="auto",
+            low_cpu_mem_usage=True,
+            attn_implementation="sdpa",
+            cache_dir=self.cache_dir,
+        )
 
     def caption(self, audio_path: Path, prompt: str | None = None) -> str:
         """Generate a text description for an audio file.
