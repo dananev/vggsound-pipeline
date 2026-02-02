@@ -16,20 +16,20 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["ruff", "pytest", "pytest-cov"]
 cpu = [
-    "torch>=2.3",
-    "torchaudio>=2.3",
+    "torch>=2.6",
+    "torchaudio>=2.6",
     "accelerate>=0.27",
     # No bitsandbytes - on macOS it runs on CPU (not MPS), so fp16 on MPS is faster
 ]
 cu121 = [
-    "torch>=2.3",
-    "torchaudio>=2.3",
+    "torch>=2.6",
+    "torchaudio>=2.6",
     "accelerate>=0.27",
     "bitsandbytes>=0.44",
 ]
 cu124 = [
-    "torch>=2.3",
-    "torchaudio>=2.3",
+    "torch>=2.6",
+    "torchaudio>=2.6",
     "accelerate>=0.27",
     "bitsandbytes>=0.44",
 ]
