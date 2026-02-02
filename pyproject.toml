@@ -26,6 +26,7 @@ cuda = [
     "torchaudio>=2.6",
     "accelerate>=0.27",
     "bitsandbytes>=0.44",
+    "compressed-tensors>=0.8",
 ]
 
 [project.scripts]
