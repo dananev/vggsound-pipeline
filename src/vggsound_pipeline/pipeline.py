@@ -285,10 +285,16 @@ def run_pipeline(
             for sample in tqdm(accepted_samples, desc="Captioning"):
                 if sample.audio_path:
                     try:
-                        sample.caption = captioner.caption(sample.audio_path)
+                        caption = captioner.caption(sample.audio_path)
+                        if caption:
+                            sample.caption = caption
+                        else:
+                            sample.caption = sample.metadata.label
+                            print(f"  Empty caption for {sample.video_id}, using label")
                     except Exception as e:
                         sample.caption = sample.metadata.label  # Fallback to original label
                         sample.error = str(e)
+                        print(f"  Caption error for {sample.video_id}: {e}")
 
             # Clear cache after captioning
             if device == "cuda":
