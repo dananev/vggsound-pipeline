@@ -38,12 +38,17 @@ from transformers.image_utils import (
     ImageInput,
     PILImageResampling,
     SizeDict,
-    VideoInput,
     get_image_size,
     make_batched_videos,
     make_flat_list_of_images,
     valid_images,
 )
+
+# VideoInput moved from image_utils to video_utils in transformers 5.x
+try:
+    from transformers.video_utils import VideoInput
+except ImportError:
+    from transformers.image_utils import VideoInput
 from transformers.processing_utils import Unpack
 from transformers.utils import (
     TensorType,
