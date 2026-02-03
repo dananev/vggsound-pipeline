@@ -24,7 +24,15 @@ import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
 
 from transformers.activations import ACT2FN
-from transformers.cache_utils import Cache, DynamicCache, SlidingWindowCache, StaticCache, EncoderDecoderCache
+from transformers.cache_utils import Cache, DynamicCache, StaticCache, EncoderDecoderCache
+
+# SlidingWindowCache removed in transformers 5.x, provide stub for isinstance checks
+try:
+    from transformers.cache_utils import SlidingWindowCache
+except ImportError:
+    class SlidingWindowCache(DynamicCache):
+        """Stub for removed SlidingWindowCache - isinstance checks will return False."""
+        pass
 from transformers.generation import GenerationMixin
 from transformers.modeling_attn_mask_utils import AttentionMaskConverter
 from transformers.modeling_flash_attention_utils import flash_attn_supports_top_left_mask, is_flash_attn_available
