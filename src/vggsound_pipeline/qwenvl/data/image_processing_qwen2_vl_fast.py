@@ -70,12 +70,23 @@ if is_torch_available():
 
 
 if is_torchvision_available():
-    from transformers.image_utils import pil_torch_interpolation_mapping
+    from torchvision.transforms import InterpolationMode
 
     if is_torchvision_v2_available():
         from torchvision.transforms.v2 import functional as F
     else:
         from torchvision.transforms import functional as F
+
+    # Define PIL to torch interpolation mapping (removed from transformers 5.x)
+    # Original from transformers v4.44 src/transformers/image_utils.py
+    pil_torch_interpolation_mapping = {
+        PILImageResampling.NEAREST: InterpolationMode.NEAREST,
+        PILImageResampling.BOX: InterpolationMode.BOX,
+        PILImageResampling.BILINEAR: InterpolationMode.BILINEAR,
+        PILImageResampling.HAMMING: InterpolationMode.HAMMING,
+        PILImageResampling.BICUBIC: InterpolationMode.BICUBIC,
+        PILImageResampling.LANCZOS: InterpolationMode.LANCZOS,
+    }
 
 logger = logging.get_logger(__name__)
 
