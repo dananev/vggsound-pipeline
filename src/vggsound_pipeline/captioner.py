@@ -289,8 +289,14 @@ class Captioner:
 
         processor.max_pixels = new_pixel
         processor.min_pixels = 256 * 28 * 28
-        processor.size["longest_edge"] = processor.max_pixels
-        processor.size["shortest_edge"] = processor.min_pixels
+        # Initialize size dict if not present
+        if processor.size is None:
+            processor.size = {}
+        processor.size["longest_edge"] = int(processor.max_pixels)
+        processor.size["shortest_edge"] = int(processor.min_pixels)
+        # Ensure resize params are set
+        processor.do_resize = True
+        processor.resample = 3  # PIL.Image.LANCZOS
 
         video_processed = processor.preprocess(images=None, videos=frames, return_tensors="pt")
 
