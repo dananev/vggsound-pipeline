@@ -422,7 +422,8 @@ class Qwen2_5_VLPreTrainedModel(PreTrainedModel):
     _supports_static_cache = False  # TODO (joao): fix. torch.compile failing probably due to `cache_positions`
 
     def _init_weights(self, module):
-        std = self.config.initializer_range
+        # Some sub-configs (e.g., VisionConfig) don't have initializer_range
+        std = getattr(self.config, "initializer_range", 0.02)
         if isinstance(module, (nn.Linear, nn.Conv3d)):
             module.weight.data.normal_(mean=0.0, std=std)
             if module.bias is not None:
