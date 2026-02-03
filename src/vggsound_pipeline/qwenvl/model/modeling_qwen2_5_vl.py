@@ -45,7 +45,11 @@ from .modeling_whisper import WhisperEncoder
 import numpy as np
 import math
 
-from liger_kernel.transformers.model.loss_utils import LigerForCausalLMLoss
+# liger_kernel is optional (only needed for training with fused loss)
+try:
+    from liger_kernel.transformers.model.loss_utils import LigerForCausalLMLoss
+except ImportError:
+    LigerForCausalLMLoss = None
 
 
 if is_flash_attn_available():
@@ -2227,7 +2231,7 @@ class video_SALMONN2_plus(Qwen2_5_VLPreTrainedModel, GenerationMixin):
         loss = None
         logits = None
 
-        if self.training and (labels is not None or shift_labels is not None):
+        if self.training and (labels is not None or shift_labels is not None) and LigerForCausalLMLoss is not None:
             loss = LigerForCausalLMLoss(
                 hidden_states=hidden_states,
                 lm_head_weight=self.lm_head.weight,
@@ -2394,6 +2398,8 @@ class video_SALMONN2_plus(Qwen2_5_VLPreTrainedModel, GenerationMixin):
             )
             hidden_states = outputs[0]
             shift_labels = loss_kwargs.pop("shift_labels", None)
+            if LigerForCausalLMLoss is None:
+                raise ImportError("liger_kernel is required for gdpo training")
             loss = LigerForCausalLMLoss(
                 hidden_states=hidden_states,
                 lm_head_weight=self.lm_head.weight,
