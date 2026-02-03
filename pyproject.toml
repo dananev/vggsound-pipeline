@@ -23,19 +23,19 @@ dev = ["ruff", "pytest", "pytest-cov"]
 cpu = [
     "torch>=2.6",
     "torchaudio>=2.6",
-    "torchcodec>=0.1",
+    "torchcodec>=0.2",
     "accelerate>=0.27",
 ]
 cuda = [
     "torch==2.9.0",
     "torchaudio==2.9.0",
-    "torchcodec>=0.1",
+    "torchcodec==0.9",
     "accelerate>=0.27",
 ]
 cuda-fast = [
     "torch==2.9.0",
     "torchaudio==2.9.0",
-    "torchcodec>=0.1",
+    "torchcodec==0.9",
     "accelerate>=0.27",
     "flash-attn==2.8.3",
     "liger-kernel>=0.5",

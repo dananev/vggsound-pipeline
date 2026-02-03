@@ -1404,8 +1404,27 @@ wheels = [
 
 [[package]]
 name = "torchcodec"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "(platform_machine != 'aarch64' and sys_platform == 'linux') or (platform_python_implementation != 'CPython' and sys_platform == 'linux')",
+    "platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'",
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/88/dc4a7928ee80823913b1ec9d6433458b32d5510288030b122c9b3d58b484/torchcodec-0.9.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:30d031eafbe287a2a54b90b35109f7e0711b393bbb263cf90487f533b8ac92d4", size = 4063923, upload-time = "2025-12-04T14:16:35.491Z" },
+    { url = "https://files.pythonhosted.org/packages/42/10/742531478a71585bcb901913a9a806dc6b8c4097f39e6e82213a129cbaf1/torchcodec-0.9.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:c4b5964e85e616097b35db6927561bbac1cbf227e1a8d4dffb0acf00a7e94725", size = 2061634, upload-time = "2025-12-04T14:16:28.386Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/5b/1f712dc3cbf26e0eaab90dccf75aee468d63ce340c51beccbdfc426400c1/torchcodec-0.9.0-cp312-cp312-win_amd64.whl", hash = "sha256:30cf3053ddd54d993b7b28613beab4ffa1199339160c4f489a87bd5bb3c0062b", size = 2186861, upload-time = "2025-12-04T14:16:42.743Z" },
+]
+
+[[package]]
+name = "torchcodec"
 version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "sys_platform == 'linux'",
+]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/52/ff/2b27797e039673156710e5a0febe87cafc203722acafa3d34db283b40cf9/torchcodec-0.10.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:b35fa4061c5757f8d714187c040a90a11669de6470a644bb04e3cd335ff1c110", size = 4073213, upload-time = "2026-01-22T15:41:45.485Z" },
     { url = "https://files.pythonhosted.org/packages/29/34/ccc711b6dc581e43b8d8d227e4173a8826994ee7b68d6b3d82291f307325/torchcodec-0.10.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:6e43184d83ccced965b31cad5bb6200c779646fee2ec153a6d784b4def40c91b", size = 2083121, upload-time = "2026-01-22T15:41:37.947Z" },
@@ -1539,7 +1558,7 @@ cpu = [
     { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cpu') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
     { name = "torchaudio", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'extra-17-vggsound-pipeline-cpu') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra != 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
     { name = "torchaudio", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cpu') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
-    { name = "torchcodec", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "torchcodec", version = "0.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 cuda = [
     { name = "accelerate", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
@@ -1548,7 +1567,7 @@ cuda = [
     { name = "torchaudio", version = "2.9.0", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cuda') or (platform_machine != 'aarch64' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_python_implementation != 'CPython' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'linux' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
     { name = "torchaudio", version = "2.9.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
     { name = "torchaudio", version = "2.9.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cuda') or (platform_python_implementation != 'CPython' and sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cuda') or (sys_platform != 'linux' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
-    { name = "torchcodec", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "torchcodec", version = "0.9.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 cuda-fast = [
     { name = "accelerate", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
@@ -1559,7 +1578,7 @@ cuda-fast = [
     { name = "torchaudio", version = "2.9.0", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_machine != 'aarch64' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_python_implementation != 'CPython' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'linux' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
     { name = "torchaudio", version = "2.9.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
     { name = "torchaudio", version = "2.9.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_python_implementation != 'CPython' and sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'linux' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
-    { name = "torchcodec", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "torchcodec", version = "0.9.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 dev = [
     { name = "pytest", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or sys_platform == 'linux' or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
@@ -1598,9 +1617,9 @@ requires-dist = [
     { name = "torchaudio", marker = "sys_platform != 'linux' and extra == 'cpu'", specifier = ">=2.6" },
     { name = "torchaudio", marker = "sys_platform != 'linux' and extra == 'cuda'", specifier = "==2.9.0" },
     { name = "torchaudio", marker = "sys_platform != 'linux' and extra == 'cuda-fast'", specifier = "==2.9.0" },
-    { name = "torchcodec", marker = "extra == 'cpu'", specifier = ">=0.1" },
-    { name = "torchcodec", marker = "extra == 'cuda'", specifier = ">=0.1" },
-    { name = "torchcodec", marker = "extra == 'cuda-fast'", specifier = ">=0.1" },
+    { name = "torchcodec", marker = "extra == 'cpu'", specifier = ">=0.2" },
+    { name = "torchcodec", marker = "extra == 'cuda'", specifier = "==0.9" },
+    { name = "torchcodec", marker = "extra == 'cuda-fast'", specifier = "==0.9" },
     { name = "tqdm", specifier = ">=4.65" },
     { name = "transformers", specifier = ">=4.48" },
     { name = "typer", specifier = ">=0.9" },
