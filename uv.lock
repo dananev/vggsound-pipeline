@@ -212,13 +212,21 @@ wheels = [
 [[package]]
 name = "flash-attn"
 version = "2.8.3"
-source = { registry = "https://pypi.org/simple" }
+source = { url = "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl" }
 dependencies = [
     { name = "einops", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "torch", version = "2.9.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (platform_machine != 'arm64' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (sys_platform != 'darwin' and extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
     { name = "torch", version = "2.9.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "(sys_platform == 'linux' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cuda' and extra == 'extra-17-vggsound-pipeline-cuda-fast') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda') or (extra == 'extra-17-vggsound-pipeline-cpu' and extra == 'extra-17-vggsound-pipeline-cuda-fast')" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3b/b2/8d76c41ad7974ee264754709c22963447f7f8134613fd9ce80984ed0dab7/flash_attn-2.8.3.tar.gz", hash = "sha256:1e71dd64a9e0280e0447b8a0c2541bad4bf6ac65bdeaa2f90e51a9e57de0370d", size = 8447812, upload-time = "2025-08-15T08:28:12.911Z" }
+wheels = [
+    { url = "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl", hash = "sha256:4e2f9e39313266b1544b68138b15b91ee6221eccf14f7902b7c6620351340810" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "einops" },
+    { name = "torch" },
+]
 
 [[package]]
 name = "fsspec"
@@ -1566,7 +1574,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'cuda-fast'", specifier = ">=0.27" },
     { name = "decord", specifier = ">=0.6" },
     { name = "ffmpeg-python", specifier = ">=0.2" },
-    { name = "flash-attn", marker = "extra == 'cuda-fast'", specifier = ">=2.5" },
+    { name = "flash-attn", marker = "extra == 'cuda-fast'", url = "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl" },
     { name = "liger-kernel", marker = "extra == 'cuda-fast'", specifier = ">=0.5" },
     { name = "orjson", specifier = ">=3.9" },
     { name = "peft", specifier = ">=0.10" },
