@@ -118,11 +118,14 @@ class Captioner:
             trust_remote_code=True,
         )
         config._attn_implementation = attn_impl
+        config.torch_dtype = dtype  # Set dtype on config for flash attention
         # Also set on nested configs
         if hasattr(config, 'vision_config') and config.vision_config:
             config.vision_config._attn_implementation = attn_impl
+            config.vision_config.torch_dtype = dtype
         if hasattr(config, 'audio_config') and config.audio_config:
             config.audio_config._attn_implementation = attn_impl
+            config.audio_config.torch_dtype = dtype
 
         # Initialize model architecture from config
         print("  Initializing model architecture...")
@@ -134,22 +137,26 @@ class Captioner:
 
         base_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             "Qwen/Qwen2.5-VL-3B-Instruct",
-            torch_dtype=dtype,
+            dtype=dtype,  # torch_dtype renamed to dtype in transformers 5.x
             attn_implementation=attn_impl,
             device_map=self.device,
             low_cpu_mem_usage=True,
             cache_dir=self.cache_dir,
         )
 
-        # Move our model to GPU before copying weights
-        self.model.to(dtype).to(self.device)
-
-        # Copy compatible weights
+        # Copy weights while self.model is still on CPU (cross-device copy works)
+        print("  Copying base weights...")
         self.model.model.load_state_dict(base_model.model.state_dict(), strict=False)
         self.model.visual.load_state_dict(base_model.visual.state_dict(), strict=False)
         self.model.lm_head.load_state_dict(base_model.lm_head.state_dict(), strict=False)
+
+        # Free GPU memory before moving our model
         del base_model
         torch.cuda.empty_cache()
+
+        # Now move our model to GPU
+        print("  Moving model to GPU...")
+        self.model.to(dtype).to(self.device)
 
         # Load LoRA adapter weights
         print("  Loading LoRA adapter...")

@@ -85,7 +85,7 @@ Be precise about what you hear. If uncertain, say so."""
             else:
                 self.model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
                     self.MODEL_ID,
-                    torch_dtype=torch.float16,
+                    dtype=torch.float16,
                     device_map="auto",
                 )
         except ImportError as e:

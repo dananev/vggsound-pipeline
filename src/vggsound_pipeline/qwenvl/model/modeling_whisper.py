@@ -533,7 +533,7 @@ class WhisperEncoder(WhisperPreTrainedModel):
         self.layers = nn.ModuleList([WhisperEncoderLayer(config) for _ in range(config.encoder_layers)])
         self.layer_norm = nn.LayerNorm(config.d_model)
 
-        self.qformer = BertLMHeadModel._from_config(config.qformer_config, torch_dtype=torch.bfloat16)
+        self.qformer = BertLMHeadModel._from_config(config.qformer_config, dtype=torch.bfloat16)
         self.q_tokens = nn.Parameter(torch.randn(1, config.qformer_config.query_length, config.qformer_config.hidden_size) * config.qformer_config.initializer_range)
         self.q_tokens.data.normal_(mean=0.0, std=config.qformer_config.initializer_range)
         self.audio_proj = nn.Linear(config.qformer_config.hidden_size, config.qformer_config.out_hidden_size, dtype=torch.bfloat16)
