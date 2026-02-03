@@ -37,6 +37,7 @@ from transformers.modeling_outputs import (
     SequenceClassifierOutput,
     TokenClassifierOutput,
 )
+from transformers.generation import GenerationMixin
 from transformers.modeling_utils import PreTrainedModel
 
 # apply_chunking_to_forward moved to pytorch_utils in transformers 5.x
@@ -991,7 +992,7 @@ class BertModel(BertPreTrainedModel):
         )
 
 
-class BertLMHeadModel(BertPreTrainedModel):
+class BertLMHeadModel(BertPreTrainedModel, GenerationMixin):
 
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
     _keys_to_ignore_on_load_missing = [r"position_ids", r"predictions.decoder.bias"]
@@ -1005,9 +1006,13 @@ class BertLMHeadModel(BertPreTrainedModel):
         self.init_weights()
 
     def get_output_embeddings(self):
+        if self.cls is None:
+            return None
         return self.cls.predictions.decoder
 
     def set_output_embeddings(self, new_embeddings):
+        if self.cls is None:
+            return
         self.cls.predictions.decoder = new_embeddings
 
     def forward(
