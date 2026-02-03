@@ -109,7 +109,7 @@ class BertConfig(PretrainedConfig):
         query_length=1,
         use_cache=True,
         classifier_dropout=None,
-        out_hidden_size=3584,
+        out_hidden_size=2048,  # 3B model (was 3584 for 7B)
         **kwargs,
     ):
         super().__init__(pad_token_id=pad_token_id, **kwargs)
@@ -153,7 +153,7 @@ class Qwen2_5_VLVisionConfig(PretrainedConfig):
         temporal_patch_size=2,
         tokens_per_second=4,
         window_size=112,
-        out_hidden_size=3584,
+        out_hidden_size=2048,  # 3B model (was 3584 for 7B)
         fullatt_block_indexes=[7, 15, 23, 31],
         **kwargs,
     ):
@@ -356,12 +356,12 @@ class Qwen2_5_VLConfig(PretrainedConfig):
 
     def __init__(
         self,
-        vocab_size=152064,
-        hidden_size=3584,
-        intermediate_size=18944,
+        vocab_size=151936,
+        hidden_size=2048,  # 3B model (was 3584 for 7B)
+        intermediate_size=11008,  # 3B model (was 18944 for 7B)
         num_hidden_layers=28,
-        num_attention_heads=28,
-        num_key_value_heads=4,
+        num_attention_heads=16,  # 3B model (was 28 for 7B)
+        num_key_value_heads=2,  # 3B model (was 4 for 7B)
         hidden_act="silu",
         max_position_embeddings=128000,
         initializer_range=0.02,
