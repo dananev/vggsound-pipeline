@@ -80,21 +80,53 @@ class Captioner:
 
         print(f"Loading video-SALMONN-2+ ({self.model_id}) on {self.device}...")
 
+        from peft import PeftModel
         from transformers import AutoTokenizer, WhisperFeatureExtractor
 
         from .qwenvl.data.image_processing_qwen2_vl_fast import Qwen2VLImageProcessorFast
+        from .qwenvl.model.configuration_qwen2_5_vl import Qwen2_5_VLConfig
         from .qwenvl.model.modeling_qwen2_5_vl import video_SALMONN2_plus
 
         attn_impl = "flash_attention_2" if self.use_flash_attn else "eager"
+        dtype = torch.bfloat16 if self.device == "cuda" else torch.float32
 
-        self.model = video_SALMONN2_plus.from_pretrained(
+        # Load config from adapter repo (has audio_config)
+        print("  Loading config...")
+        config = Qwen2_5_VLConfig.from_pretrained(
             self.model_id,
-            attn_implementation=attn_impl,
-            torch_dtype=torch.bfloat16 if self.device == "cuda" else torch.float32,
             cache_dir=self.cache_dir,
             trust_remote_code=True,
         )
-        self.model.to(self.device)
+        config._attn_implementation = attn_impl
+
+        # Initialize model architecture from config
+        print("  Initializing model architecture...")
+        self.model = video_SALMONN2_plus(config)
+
+        # Load base Qwen2.5-VL weights for LLM backbone
+        print("  Loading base Qwen2.5-VL weights...")
+        from transformers import Qwen2_5_VLForConditionalGeneration
+        base_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            "Qwen/Qwen2.5-VL-3B-Instruct",
+            torch_dtype=dtype,
+            cache_dir=self.cache_dir,
+        )
+        # Copy compatible weights
+        self.model.model.load_state_dict(base_model.model.state_dict(), strict=False)
+        self.model.visual.load_state_dict(base_model.visual.state_dict(), strict=False)
+        self.model.lm_head.load_state_dict(base_model.lm_head.state_dict(), strict=False)
+        del base_model
+
+        # Load LoRA adapter weights
+        print("  Loading LoRA adapter...")
+        self.model = PeftModel.from_pretrained(
+            self.model,
+            self.model_id,
+            cache_dir=self.cache_dir,
+        )
+        self.model = self.model.merge_and_unload()
+
+        self.model.to(dtype).to(self.device)
         self.model.eval()
 
         self.tokenizer = AutoTokenizer.from_pretrained(
