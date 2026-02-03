@@ -41,11 +41,23 @@ from liger_kernel.transformers.model.loss_utils import LigerForCausalLMLoss
 
 
 if is_flash_attn_available():
-    from transformers.modeling_flash_attention_utils import apply_rotary_emb, flash_attn_varlen_func
-
-
-if is_flash_attn_available():
     from transformers.modeling_flash_attention_utils import _flash_attention_forward
+    # flash_attn_varlen_func import directly from flash_attn (removed from transformers 5.x)
+    from flash_attn import flash_attn_varlen_func
+
+    # apply_rotary_emb removed from transformers 5.x, provide local implementation
+    def apply_rotary_emb(x, cos, sin):
+        """Apply rotary embeddings to input tensor."""
+        cos = cos.unsqueeze(1)
+        sin = sin.unsqueeze(1)
+        x_embed = (x * cos) + (_rotate_half(x) * sin)
+        return x_embed
+
+    def _rotate_half(x):
+        """Rotate half the hidden dims of the input."""
+        x1 = x[..., : x.shape[-1] // 2]
+        x2 = x[..., x.shape[-1] // 2 :]
+        return torch.cat((-x2, x1), dim=-1)
 
 
 logger = logging.get_logger(__name__)
