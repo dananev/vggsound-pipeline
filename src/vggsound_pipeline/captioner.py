@@ -58,12 +58,22 @@ class Captioner:
         self.model_id = model_id
         self.cache_dir = cache_dir
 
-        # Check if flash_attn is actually available
+        # Check if flash_attn is actually available and functional
         flash_attn_available = False
         if use_flash_attn and device == "cuda":
             try:
+                # Import the actual function we need, not just the package
+                from flash_attn import flash_attn_varlen_func
                 import flash_attn
+                # Fix non-standard version strings (e.g., from wheel builds)
+                # that cause transformers version check to fail
+                if hasattr(flash_attn, "__version__"):
+                    version = flash_attn.__version__
+                    # Extract base version (e.g., "2.8.3" from "2.8.3+cu12torch2.9...")
+                    if "+" in version:
+                        flash_attn.__version__ = version.split("+")[0]
                 flash_attn_available = True
+                print(f"  flash_attn detected (version {flash_attn.__version__})")
             except ImportError:
                 print("  Note: flash_attn not installed, using eager attention")
         self.use_flash_attn = flash_attn_available
@@ -107,6 +117,11 @@ class Captioner:
             trust_remote_code=True,
         )
         config._attn_implementation = attn_impl
+        # Also set on nested configs
+        if hasattr(config, 'vision_config') and config.vision_config:
+            config.vision_config._attn_implementation = attn_impl
+        if hasattr(config, 'audio_config') and config.audio_config:
+            config.audio_config._attn_implementation = attn_impl
 
         # Initialize model architecture from config
         print("  Initializing model architecture...")
@@ -118,6 +133,7 @@ class Captioner:
         base_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             "Qwen/Qwen2.5-VL-3B-Instruct",
             torch_dtype=dtype,
+            attn_implementation=attn_impl,
             cache_dir=self.cache_dir,
         )
         # Copy compatible weights
