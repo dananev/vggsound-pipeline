@@ -69,16 +69,18 @@ if is_torch_available():
     import torch
 
 
-if is_torchvision_available():
+# Import torchvision directly instead of using transformers' check
+# (is_torchvision_available() can fail due to import_utils issues)
+try:
     from torchvision.transforms import InterpolationMode
 
-    if is_torchvision_v2_available():
+    try:
         from torchvision.transforms.v2 import functional as F
-    else:
+    except ImportError:
         from torchvision.transforms import functional as F
 
     # Define PIL to torch interpolation mapping locally
-    # (import from transformers.image_utils fails in transformers 5.x)
+    # (removed from transformers.image_utils in transformers 5.x)
     pil_torch_interpolation_mapping = {
         PILImageResampling.NEAREST: InterpolationMode.NEAREST_EXACT,
         PILImageResampling.BOX: InterpolationMode.BOX,
@@ -87,6 +89,9 @@ if is_torchvision_available():
         PILImageResampling.BICUBIC: InterpolationMode.BICUBIC,
         PILImageResampling.LANCZOS: InterpolationMode.LANCZOS,
     }
+except ImportError:
+    # Fallback if torchvision not installed
+    pil_torch_interpolation_mapping = {}
 
 logger = logging.get_logger(__name__)
 
