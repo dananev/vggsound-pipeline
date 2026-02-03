@@ -40,7 +40,12 @@ class MusicDetector:
     # Model identifier
     MODEL_ID = "laion/larger_clap_music_and_speech"
 
-    def __init__(self, device: str = "auto", labels: list[str] | None = None, cache_dir: str | None = None):
+    def __init__(
+        self,
+        device: str = "auto",
+        labels: list[str] | None = None,
+        cache_dir: str | None = None,
+    ):
         """Initialize CLAP model.
 
         Args:
@@ -69,7 +74,9 @@ class MusicDetector:
 
         print(f"Loading CLAP model on {self.device}...")
         self.processor = AutoProcessor.from_pretrained(self.MODEL_ID, cache_dir=self.cache_dir)
-        self.model = ClapModel.from_pretrained(self.MODEL_ID, cache_dir=self.cache_dir).to(self.device)
+        self.model = ClapModel.from_pretrained(
+            self.MODEL_ID, cache_dir=self.cache_dir
+        ).to(self.device)
         # Set model to inference mode (not training)
         self.model.requires_grad_(False)
 
@@ -83,7 +90,10 @@ class MusicDetector:
             text_inputs = {k: v.to(self.device) for k, v in text_inputs.items()}
             text_output = self.model.get_text_features(**text_inputs)
             # get_text_features returns BaseModelOutputWithPooling in newer transformers
-            text_embeds = text_output.pooler_output if hasattr(text_output, "pooler_output") else text_output
+            if hasattr(text_output, "pooler_output"):
+                text_embeds = text_output.pooler_output
+            else:
+                text_embeds = text_output
             self._text_embeddings = text_embeds / text_embeds.norm(dim=-1, keepdim=True)
 
     def classify(self, audio_path: Path) -> dict[str, float]:

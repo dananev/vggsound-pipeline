@@ -111,42 +111,37 @@ def extract_videos_from_tar(
         List of paths to extracted video files
     """
     output_dir.mkdir(parents=True, exist_ok=True)
-    extracted = []
-    count = 0
 
     with tarfile.open(tar_path, "r:gz") as tar:
         members = [m for m in tar.getmembers() if m.name.endswith(".mp4")]
 
         # Filter by video_ids if provided
         if video_ids:
-            members = [
-                m for m in members if Path(m.name).stem in video_ids
-            ]
+            members = [m for m in members if Path(m.name).stem in video_ids]
 
         # Apply limit
         if limit:
             members = members[:limit]
 
-        for member in tqdm(members, desc="Extracting videos"):
-            # Extract to output directory, flattening any subdirectories
-            filename = Path(member.name).name
+        # Flatten paths and separate already extracted vs to-extract
+        extracted_paths = []
+        to_extract = []
+
+        for m in members:
+            filename = Path(m.name).name
             output_path = output_dir / filename
+            extracted_paths.append(output_path)
 
-            # Skip if already extracted
-            if output_path.exists():
-                extracted.append(output_path)
-                continue
+            if not output_path.exists():
+                m.name = filename  # Flatten path for extraction
+                to_extract.append(m)
 
-            # Extract file
-            member.name = filename  # Flatten path
-            tar.extract(member, output_dir)
-            extracted.append(output_path)
+        # Batch extract all needed files at once (faster than loop)
+        if to_extract:
+            print(f"  Extracting {len(to_extract)} videos (batch mode)...")
+            tar.extractall(output_dir, members=to_extract)
 
-            count += 1
-            if limit and count >= limit:
-                break
-
-    return extracted
+    return extracted_paths
 
 
 def extract_audio_ffmpeg(

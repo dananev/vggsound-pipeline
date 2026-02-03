@@ -91,6 +91,7 @@ explicit = true
 
 [tool.ruff]
 line-length = 100
+exclude = ["src/vggsound_pipeline/qwenvl"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]

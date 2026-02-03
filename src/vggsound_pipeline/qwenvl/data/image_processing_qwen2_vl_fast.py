@@ -20,12 +20,17 @@ from typing import Dict, List, Optional, Union
 
 from transformers.image_processing_utils import BatchFeature
 from transformers.image_processing_utils_fast import (
-    BASE_IMAGE_PROCESSOR_FAST_DOCSTRING,
     BaseImageProcessorFast,
     DefaultFastImageProcessorKwargs,
     group_images_by_shape,
     reorder_images,
 )
+
+# Stub for removed constant in newer transformers versions
+try:
+    from transformers.image_processing_utils_fast import BASE_IMAGE_PROCESSOR_FAST_DOCSTRING
+except ImportError:
+    BASE_IMAGE_PROCESSOR_FAST_DOCSTRING = ""
 from transformers.image_utils import (
     OPENAI_CLIP_MEAN,
     OPENAI_CLIP_STD,

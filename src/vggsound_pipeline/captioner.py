@@ -80,9 +80,10 @@ class Captioner:
 
         print(f"Loading video-SALMONN-2+ ({self.model_id}) on {self.device}...")
 
+        from transformers import AutoTokenizer, WhisperFeatureExtractor
+
         from .qwenvl.data.image_processing_qwen2_vl_fast import Qwen2VLImageProcessorFast
         from .qwenvl.model.modeling_qwen2_5_vl import video_SALMONN2_plus
-        from transformers import AutoTokenizer, WhisperFeatureExtractor
 
         attn_impl = "flash_attention_2" if self.use_flash_attn else "eager"
 
