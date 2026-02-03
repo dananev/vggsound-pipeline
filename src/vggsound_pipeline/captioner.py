@@ -97,8 +97,6 @@ class Captioner:
         if self.model is not None:
             return
 
-        print(f"Loading video-SALMONN-2+ ({self.model_id}) on {self.device}...")
-
         from peft import PeftModel
         from transformers import AutoTokenizer, WhisperFeatureExtractor
 
@@ -108,6 +106,9 @@ class Captioner:
 
         attn_impl = "flash_attention_2" if self.use_flash_attn else "eager"
         dtype = torch.bfloat16 if self.device == "cuda" else torch.float32
+
+        print(f"Loading video-SALMONN-2+ ({self.model_id})")
+        print(f"  device={self.device}, dtype={dtype}, attn={attn_impl}")
 
         # Load config from adapter repo (has audio_config)
         print("  Loading config...")
@@ -127,20 +128,28 @@ class Captioner:
         print("  Initializing model architecture...")
         self.model = video_SALMONN2_plus(config)
 
-        # Load base Qwen2.5-VL weights for LLM backbone
+        # Load base Qwen2.5-VL weights directly to GPU to minimize CPU RAM
         print("  Loading base Qwen2.5-VL weights...")
         from transformers import Qwen2_5_VLForConditionalGeneration
+
         base_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             "Qwen/Qwen2.5-VL-3B-Instruct",
             torch_dtype=dtype,
             attn_implementation=attn_impl,
+            device_map=self.device,
+            low_cpu_mem_usage=True,
             cache_dir=self.cache_dir,
         )
+
+        # Move our model to GPU before copying weights
+        self.model.to(dtype).to(self.device)
+
         # Copy compatible weights
         self.model.model.load_state_dict(base_model.model.state_dict(), strict=False)
         self.model.visual.load_state_dict(base_model.visual.state_dict(), strict=False)
         self.model.lm_head.load_state_dict(base_model.lm_head.state_dict(), strict=False)
         del base_model
+        torch.cuda.empty_cache()
 
         # Load LoRA adapter weights
         print("  Loading LoRA adapter...")
@@ -150,8 +159,6 @@ class Captioner:
             cache_dir=self.cache_dir,
         )
         self.model = self.model.merge_and_unload()
-
-        self.model.to(dtype).to(self.device)
         self.model.eval()
 
         self.tokenizer = AutoTokenizer.from_pretrained(

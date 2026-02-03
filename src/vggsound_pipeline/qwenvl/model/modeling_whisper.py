@@ -21,7 +21,7 @@ except ImportError:
         pass
 from transformers.generation import GenerationMixin
 from transformers.modeling_attn_mask_utils import AttentionMaskConverter
-from transformers.modeling_flash_attention_utils import flash_attn_supports_top_left_mask, is_flash_attn_available
+from transformers.modeling_flash_attention_utils import flash_attn_supports_top_left_mask
 from transformers.modeling_outputs import BaseModelOutputWithPast, ModelOutput, BaseModelOutput, CausalLMOutputWithCrossAttentions
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
 from transformers.modeling_utils import PreTrainedModel
@@ -30,24 +30,13 @@ from .configuration_qwen2_5_vl import Qwen2_5_VLConfig, Qwen2_5_VLVisionConfig, 
 import numpy as np
 import math
 from .modeling_bert import BertLMHeadModel
-if is_flash_attn_available():
-    from transformers.modeling_flash_attention_utils import _flash_attention_forward
-    # flash_attn_varlen_func import directly from flash_attn (removed from transformers 5.x)
-    from flash_attn import flash_attn_varlen_func
-
-    # apply_rotary_emb removed from transformers 5.x, provide local implementation
-    def apply_rotary_emb(x, cos, sin):
-        """Apply rotary embeddings to input tensor."""
-        cos = cos.unsqueeze(1)
-        sin = sin.unsqueeze(1)
-        x_embed = (x * cos) + (_rotate_half(x) * sin)
-        return x_embed
-
-    def _rotate_half(x):
-        """Rotate half the hidden dims of the input."""
-        x1 = x[..., : x.shape[-1] // 2]
-        x2 = x[..., x.shape[-1] // 2 :]
-        return torch.cat((-x2, x1), dim=-1)
+from .attn_utils import (
+    _flash_attn_available,
+    flash_attn_varlen_func,
+    _flash_attention_forward,
+    apply_rotary_emb,
+    _rotate_half,
+)
 
 def sinusoids(length: int, channels: int, max_timescale: float = 10000) -> torch.Tensor:
     """Returns sinusoids for positional embedding"""
