@@ -10,7 +10,6 @@ The 3B model achieves SOTA on audio-visual benchmarks while being efficient.
 """
 
 import copy
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -81,14 +80,8 @@ class Captioner:
 
         print(f"Loading video-SALMONN-2+ ({self.model_id}) on {self.device}...")
 
-        # Add the cloned repo to path for imports
-        salmonn_repo = Path("/Users/dananev/workspace/oss/video-SALMONN-2")
-        salmonn_plus_path = salmonn_repo / "video_SALMONN2_plus"
-        if salmonn_plus_path.exists():
-            sys.path.insert(0, str(salmonn_plus_path))
-
-        from qwenvl.data.image_processing_qwen2_vl_fast import Qwen2VLImageProcessorFast
-        from qwenvl.model.modeling_qwen2_5_vl import video_SALMONN2_plus
+        from .qwenvl.data.image_processing_qwen2_vl_fast import Qwen2VLImageProcessorFast
+        from .qwenvl.model.modeling_qwen2_5_vl import video_SALMONN2_plus
         from transformers import AutoTokenizer, WhisperFeatureExtractor
 
         attn_impl = "flash_attention_2" if self.use_flash_attn else "eager"

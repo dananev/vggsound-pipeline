@@ -11,7 +11,7 @@ dependencies = [
     "orjson>=3.9",
     "tqdm>=4.65",
     "ffmpeg-python>=0.2",
-    "decord>=0.6",
+    "decord>=0.6; sys_platform == 'linux'",
     "soundfile>=0.12",
     "peft>=0.10",
     "safetensors>=0.4",
