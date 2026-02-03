@@ -37,17 +37,40 @@ from transformers.modeling_outputs import (
     SequenceClassifierOutput,
     TokenClassifierOutput,
 )
-from transformers.modeling_utils import (
-    PreTrainedModel,
-    find_pruneable_heads_and_indices,
-    prune_linear_layer,
-)
+from transformers.modeling_utils import PreTrainedModel
 
 # apply_chunking_to_forward moved to pytorch_utils in transformers 5.x
 try:
     from transformers.pytorch_utils import apply_chunking_to_forward
 except ImportError:
     from transformers.modeling_utils import apply_chunking_to_forward
+
+# prune_linear_layer moved to pytorch_utils in transformers 5.x
+try:
+    from transformers.pytorch_utils import prune_linear_layer
+except ImportError:
+    from transformers.modeling_utils import prune_linear_layer
+
+# find_pruneable_heads_and_indices was removed in transformers 5.x
+# Provide a local implementation for backward compatibility
+try:
+    from transformers.pytorch_utils import find_pruneable_heads_and_indices
+except ImportError:
+    try:
+        from transformers.modeling_utils import find_pruneable_heads_and_indices
+    except ImportError:
+        import torch
+
+        def find_pruneable_heads_and_indices(heads, n_heads, head_size, already_pruned_heads):
+            """Find heads to prune and their indices (compat stub for transformers 5.x)."""
+            mask = torch.ones(n_heads, head_size)
+            heads = set(heads) - already_pruned_heads
+            for head in heads:
+                head -= sum(1 if h < head else 0 for h in already_pruned_heads)
+                mask[head] = 0
+            mask = mask.view(-1).contiguous().eq(1)
+            index = torch.arange(len(mask))[mask].long()
+            return heads, index
 from transformers.utils import logging
 from transformers.models.bert.configuration_bert import BertConfig
 
