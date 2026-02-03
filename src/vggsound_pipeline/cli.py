@@ -13,17 +13,28 @@ app = typer.Typer(
 
 @app.command()
 def run(
-    input_tar: Path = typer.Argument(
-        ...,
-        help="Path to vggsound_XX.tar.gz archive",
-        exists=True,
-        readable=True,
-    ),
     csv_path: Path = typer.Argument(
         ...,
         help="Path to vggsound.csv metadata file",
         exists=True,
         readable=True,
+    ),
+    input_tar: Path | None = typer.Option(
+        None,
+        "--tar",
+        "-t",
+        help="Path to vggsound_XX.tar.gz archive (use this OR --video-dir)",
+        exists=True,
+        readable=True,
+    ),
+    video_dir: Path | None = typer.Option(
+        None,
+        "--video-dir",
+        "-v",
+        help="Path to pre-extracted video directory (use this OR --tar)",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
     ),
     output: Path = typer.Option(
         Path("output/sfx_filtered.jsonl"),
@@ -102,7 +113,7 @@ def run(
     """Filter VGGSound dataset to extract sound effects only.
 
     This pipeline:
-    1. Extracts videos from tar.gz archive
+    1. Reads videos from tar.gz OR pre-extracted directory
     2. Converts video audio to WAV (16kHz mono)
     3. Optionally pre-filters by VGGSound labels
     4. Detects speech using Silero VAD
@@ -110,9 +121,18 @@ def run(
     6. Generates captions using video-SALMONN-2+
     7. Outputs filtered results to JSONL
 
-    Example:
-        vggsound run vggsound_00.tar.gz vggsound.csv --sample-limit 100
+    Example with tar:
+        vggsound run vggsound.csv --tar vggsound_00.tar.gz --sample-limit 100
+
+    Example with pre-extracted (faster):
+        tar -xzf vggsound_00.tar.gz -C videos/
+        vggsound run vggsound.csv --video-dir videos/ --sample-limit 100
     """
+    if not input_tar and not video_dir:
+        raise typer.BadParameter("Must provide either --tar or --video-dir")
+    if input_tar and video_dir:
+        raise typer.BadParameter("Provide only one of --tar or --video-dir, not both")
+
     from .config import PipelineConfig
     from .pipeline import run_pipeline
 
@@ -129,6 +149,7 @@ def run(
 
     run_pipeline(
         input_tar=input_tar,
+        video_dir=video_dir,
         csv_path=csv_path,
         output_path=output,
         config=config,

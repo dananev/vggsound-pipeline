@@ -92,10 +92,11 @@ def _run_captioning(
 
 
 def run_pipeline(
-    input_tar: Path,
     csv_path: Path,
     output_path: Path,
     config: PipelineConfig,
+    input_tar: Path | None = None,
+    video_dir: Path | None = None,
     skip_label_filter: bool = False,
     enable_multimodal: bool = False,
     sample_limit: int | None = None,
@@ -105,19 +106,26 @@ def run_pipeline(
     """Run the full VGGSound filtering pipeline.
 
     Args:
-        input_tar: Path to vggsound_XX.tar.gz
         csv_path: Path to vggsound.csv
         output_path: Path for output JSONL
         config: Pipeline configuration
+        input_tar: Path to vggsound_XX.tar.gz (mutually exclusive with video_dir)
+        video_dir: Path to pre-extracted video directory (mutually exclusive with input_tar)
         skip_label_filter: Skip label-based pre-filtering
         enable_multimodal: Enable multimodal verification for uncertain samples
         sample_limit: Limit number of samples (for testing)
         resume: Resume from checkpoint
         device: Device for inference
     """
+    if not input_tar and not video_dir:
+        raise ValueError("Must provide either input_tar or video_dir")
+
+    use_preextracted = video_dir is not None
+
     print("VGGSound Pipeline Starting")
     print("=" * 60)
-    print(f"Input: {input_tar}")
+    print(f"Input: {video_dir if use_preextracted else input_tar}")
+    print(f"Mode: {'pre-extracted directory' if use_preextracted else 'tar archive'}")
     print(f"CSV: {csv_path}")
     print(f"Output: {output_path}")
     print(f"Device: {device}")
@@ -156,14 +164,21 @@ def run_pipeline(
     all_metadata = parse_vggsound_csv(csv_path)
     print(f"  Total samples in CSV: {len(all_metadata)}")
 
-    # Step 2: Scan tar archive
-    print("\n[2/7] Scanning tar archive...")
-    tar_videos = get_videos_in_tar(input_tar)
-    print(f"  Videos in tar: {len(tar_videos)}")
+    # Step 2: Scan video source
+    if use_preextracted:
+        print("\n[2/7] Scanning video directory...")
+        video_files = list(video_dir.glob("*.mp4"))
+        available_video_ids = {vf.stem for vf in video_files}
+        print(f"  Videos in directory: {len(available_video_ids)}")
+    else:
+        print("\n[2/7] Scanning tar archive...")
+        tar_videos = get_videos_in_tar(input_tar)
+        available_video_ids = {Path(v).stem for v in tar_videos}
+        print(f"  Videos in tar: {len(available_video_ids)}")
 
     # Filter metadata to only include videos we have
     metadata_lookup = {m.sample_id: m for m in all_metadata}
-    available_ids = {Path(v).stem for v in tar_videos} & set(metadata_lookup.keys())
+    available_ids = available_video_ids & set(metadata_lookup.keys())
     print(f"  Matched samples: {len(available_ids)}")
 
     if sample_limit:
@@ -190,12 +205,16 @@ def run_pipeline(
         print("No candidates to process after filtering.")
         return
 
-    # Step 4: Extract videos
-    print(f"\n[4/7] Extracting {len(candidates)} videos...")
+    # Step 4: Get video paths
     candidate_ids = {c.sample_id for c in candidates}
-    video_paths = extract_videos_from_tar(input_tar, video_dir, video_ids=candidate_ids)
+    if use_preextracted:
+        print(f"\n[4/7] Using {len(candidates)} pre-extracted videos...")
+        video_paths = [video_dir / f"{cid}.mp4" for cid in candidate_ids if (video_dir / f"{cid}.mp4").exists()]
+    else:
+        print(f"\n[4/7] Extracting {len(candidates)} videos from tar...")
+        video_paths = extract_videos_from_tar(input_tar, config.cache_dir / "videos", video_ids=candidate_ids)
     video_path_map = {vp.stem: vp for vp in video_paths}
-    print(f"  Extracted: {len(video_paths)} videos")
+    print(f"  Available: {len(video_paths)} videos")
 
     # Step 5: Extract audio
     print("\n[5/7] Extracting audio...")
