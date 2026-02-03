@@ -77,10 +77,10 @@ if is_torchvision_available():
     else:
         from torchvision.transforms import functional as F
 
-    # Define PIL to torch interpolation mapping (removed from transformers 5.x)
-    # Original from transformers v4.44 src/transformers/image_utils.py
+    # Define PIL to torch interpolation mapping locally
+    # (import from transformers.image_utils fails in transformers 5.x)
     pil_torch_interpolation_mapping = {
-        PILImageResampling.NEAREST: InterpolationMode.NEAREST,
+        PILImageResampling.NEAREST: InterpolationMode.NEAREST_EXACT,
         PILImageResampling.BOX: InterpolationMode.BOX,
         PILImageResampling.BILINEAR: InterpolationMode.BILINEAR,
         PILImageResampling.HAMMING: InterpolationMode.HAMMING,
