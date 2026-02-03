@@ -279,27 +279,15 @@ class Captioner:
         self, frames: np.ndarray, frame_idx: list[int], video_length: float
     ) -> tuple[torch.Tensor, torch.Tensor, list[float]]:
         """Process video frames using Qwen2VL image processor."""
-        processor = copy.deepcopy(self.image_processor)
-
-        video_max_frame_pixels = 61250
-        if len(frame_idx) < self.video_max_frames:
-            new_pixel = 0.95 * self.video_max_frames / len(frame_idx) * video_max_frame_pixels
-        else:
-            new_pixel = video_max_frame_pixels
-
-        max_pixels = int(new_pixel)
-        min_pixels = 256 * 28 * 28
-        size = {"longest_edge": max_pixels, "shortest_edge": min_pixels}
-
-        video_processed = processor.preprocess(
+        # Disable resizing - frames from video decoder are already reasonable sizes
+        # This avoids transformers 5.x image processor configuration issues
+        video_processed = self.image_processor.preprocess(
             images=None,
             videos=frames,
             return_tensors="pt",
-            do_resize=True,
-            size=size,
-            resample=3,  # PIL.Image.LANCZOS
-            min_pixels=min_pixels,
-            max_pixels=max_pixels,
+            do_resize=False,
+            do_rescale=True,
+            do_normalize=True,
         )
 
         pixel_values = video_processed["pixel_values_videos"]

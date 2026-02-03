@@ -147,7 +147,7 @@ def run_pipeline(
 
     # Setup directories
     config.cache_dir.mkdir(parents=True, exist_ok=True)
-    video_dir = config.cache_dir / "videos"
+    cache_video_dir = config.cache_dir / "videos"  # For tar extraction mode
     audio_dir = config.cache_dir / "audio"
     checkpoint_path = config.cache_dir / "checkpoint.json"
 
