@@ -45,8 +45,12 @@ class ProcessedSample:
     error: str | None = None
 
 
+_first_caption_error = True  # Print full traceback only once
+
 def _caption_sample(sample: ProcessedSample, captioner) -> None:
     """Generate caption for a single sample, updating it in place."""
+    global _first_caption_error
+
     if not sample.video_path:
         sample.caption = sample.metadata.label
         return
@@ -58,9 +62,13 @@ def _caption_sample(sample: ProcessedSample, captioner) -> None:
         )
         sample.caption = caption if caption else sample.metadata.label
     except Exception as e:
+        import traceback
         sample.caption = sample.metadata.label
         sample.error = str(e)
         print(f"  Caption error for {sample.video_id}: {e}")
+        if _first_caption_error:
+            traceback.print_exc()
+            _first_caption_error = False
 
 
 def _run_captioning(
