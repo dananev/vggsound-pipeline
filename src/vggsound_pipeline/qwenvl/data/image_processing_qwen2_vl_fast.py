@@ -21,10 +21,15 @@ from typing import Dict, List, Optional, Union
 from transformers.image_processing_utils import BatchFeature
 from transformers.image_processing_utils_fast import (
     BaseImageProcessorFast,
-    DefaultFastImageProcessorKwargs,
     group_images_by_shape,
     reorder_images,
 )
+
+# DefaultFastImageProcessorKwargs renamed to ImagesKwargs in transformers 5.x
+try:
+    from transformers.image_processing_utils_fast import DefaultFastImageProcessorKwargs
+except ImportError:
+    from transformers.processing_utils import ImagesKwargs as DefaultFastImageProcessorKwargs
 
 # Stub for removed constant in newer transformers versions
 try:
