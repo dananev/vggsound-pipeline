@@ -32,8 +32,8 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, ModelOutput, 
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
 from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import add_start_docstrings, add_start_docstrings_to_model_forward, logging, replace_return_docstrings
-from qwenvl.model.configuration_qwen2_5_vl import Qwen2_5_VLConfig, Qwen2_5_VLVisionConfig, WhisperConfig
-from qwenvl.model.modeling_whisper import WhisperEncoder
+from .configuration_qwen2_5_vl import Qwen2_5_VLConfig, Qwen2_5_VLVisionConfig, WhisperConfig
+from .modeling_whisper import WhisperEncoder
 import numpy as np
 import math
 

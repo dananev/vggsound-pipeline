@@ -18,10 +18,10 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, ModelOutput, 
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
 from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import add_start_docstrings, add_start_docstrings_to_model_forward, logging, replace_return_docstrings
-from qwenvl.model.configuration_qwen2_5_vl import Qwen2_5_VLConfig, Qwen2_5_VLVisionConfig, WhisperConfig
+from .configuration_qwen2_5_vl import Qwen2_5_VLConfig, Qwen2_5_VLVisionConfig, WhisperConfig
 import numpy as np
 import math
-from qwenvl.model.modeling_bert import BertLMHeadModel
+from .modeling_bert import BertLMHeadModel
 if is_flash_attn_available():
     from transformers.modeling_flash_attention_utils import apply_rotary_emb, flash_attn_varlen_func
 
