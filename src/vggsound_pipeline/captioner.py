@@ -57,7 +57,16 @@ class Captioner:
         self.device = device
         self.model_id = model_id
         self.cache_dir = cache_dir
-        self.use_flash_attn = use_flash_attn and device == "cuda"
+
+        # Check if flash_attn is actually available
+        flash_attn_available = False
+        if use_flash_attn and device == "cuda":
+            try:
+                import flash_attn
+                flash_attn_available = True
+            except ImportError:
+                print("  Note: flash_attn not installed, using eager attention")
+        self.use_flash_attn = flash_attn_available
 
         self.model = None
         self.tokenizer = None
